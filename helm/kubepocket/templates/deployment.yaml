@@ -27,30 +27,31 @@ spec:
         
         env:
         - name: DATABASE_PATH
-          value: /app/data/kubepocket.db
+          value: /app/data/kubepocket.db  # Doğru yol
         - name: NAMESPACE
           value: {{ .Values.watchNamespace | default .Release.Namespace }}
         - name: LOG_LEVEL
           value: {{ .Values.logLevel | default "INFO" }}
         
         ports:
-        - name: api
+        - name: api  # 🔥 DÜZELTİLDİ: Port ismi "api" olarak tanımlandı
           containerPort: 8000
           protocol: TCP
         - name: metrics
           containerPort: 8001
           protocol: TCP
         
+        # 🔥 DÜZELTİLDİ: Health check'ler port ismi kullanıyor
         livenessProbe:
           httpGet:
             path: /health
-            port: api
+            port: api  # Sayısal port yerine isim kullanılıyor
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health
-            port: api
+            port: api  # Sayısal port yerine isim kullanılıyor
           initialDelaySeconds: 5
           periodSeconds: 5
         

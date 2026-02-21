@@ -7,7 +7,7 @@ replicaCount: 1
 # Docker image configuration
 image:
   repository: kubepocket/kubepocket
-  tag: 2.0.1
+  tag: 2.0.3
   pullPolicy: IfNotPresent
 
 # Image pull secrets (if using private registry)
@@ -54,7 +54,7 @@ persistence:
   storageClass: ""
   accessMode: ReadWriteOnce
 
-# Service configuration
+# Service configuration - 🔥 DÜZELTİLDİ: Port isimleri eklendi
 service:
   apiPort: 8000
   metricsPort: 8001
@@ -177,32 +177,20 @@ extraVolumeMounts: []
 namespace:
   create: false # We use --create-namespace flag
 
-# values.yaml'ınızın sonuna EKLEYİN:
-
-# ⚠️ YENİ: Persistence ayarları
-persistence:
-  enabled: true
-  size: 1Gi
-  storageClass: ""  # Kubernetes default storage class kullanılır
-
-# ⚠️ YENİ: RBAC
-rbac:
-  create: true
-
-# ⚠️ YENİ: Hangi namespace'i izlesin? (boş bırakılırsa tüm namespace'ler)
+# 🔥 YENİ: Hangi namespace'i izlesin? (boş bırakılırsa tüm namespace'ler)
 watchNamespace: ""
 
-# ⚠️ YENİ: Konfigürasyon (settings.yaml içeriği)
+# 🔥 YENİ: Konfigürasyon (settings.yaml içeriği)
 config:
   anomaly_detection:
     window_size: 100
     cpu_threshold: 2.0
     memory_threshold: 2.0
-  
+
   monitoring:
     check_interval: 30
     namespace: "default"
-  
+
   alerts:
     slack:
       enabled: false
@@ -212,5 +200,5 @@ config:
       smtp_server: "smtp.gmail.com"
       smtp_port: 587
 
-# ⚠️ YENİ: Log seviyesi
+# 🔥 YENİ: Log seviyesi
 logLevel: INFO

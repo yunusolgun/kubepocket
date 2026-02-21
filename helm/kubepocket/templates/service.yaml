@@ -13,9 +13,9 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - name: api
+    - name: api  # 🔥 DÜZELTİLDİ: Deployment'daki port ismiyle aynı
       port: {{ .Values.service.apiPort }}
-      targetPort: api
+      targetPort: api  # 🔥 DÜZELTİLDİ: "api" ismine yönlendiriliyor
       protocol: TCP
     - name: metrics
       port: {{ .Values.service.metricsPort }}

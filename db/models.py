@@ -7,17 +7,19 @@ import os
 
 Base = declarative_base()
 
+
 class Cluster(Base):
     __tablename__ = 'clusters'
-    
+
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
     context = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
+
 class Metric(Base):
     __tablename__ = 'metrics'
-    
+
     id = Column(Integer, primary_key=True)
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
     namespace = Column(String)
@@ -26,10 +28,11 @@ class Metric(Base):
     total_cpu = Column(Float)
     total_memory = Column(Float)
     total_restarts = Column(Integer)
-    
+
+
 class Alert(Base):
     __tablename__ = 'alerts'
-    
+
     id = Column(Integer, primary_key=True)
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
     namespace = Column(String)
@@ -38,9 +41,10 @@ class Alert(Base):
     resolved = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class Statistics(Base):
     __tablename__ = 'statistics'
-    
+
     id = Column(Integer, primary_key=True)
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
     namespace = Column(String)
@@ -52,13 +56,19 @@ class Statistics(Base):
     trend_slope = Column(Float)   # Trend slope (positive/negative)
     calculated_at = Column(DateTime, default=datetime.utcnow)
 
-DATABASE_URL = "sqlite:///./kubepocket.db"
+
+# ✅ Environment variable'dan al, yoksa /app/data/kubepocket.db kullan
+DATABASE_PATH = os.getenv('DATABASE_PATH', '/app/data/kubepocket.db')
+DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
+
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 def init_db():
     Base.metadata.create_all(bind=engine)
-    print("✅ Database initialized successfully!")
+    print(f"✅ Database initialized successfully at {DATABASE_PATH}!")
+
 
 if __name__ == "__main__":
     init_db()
