@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kubepocket.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubepocket.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+  - name: api
+    port: {{ .Values.service.apiPort }}
+    targetPort: api
+    protocol: TCP
+  - name: metrics
+    port: {{ .Values.service.metricsPort }}
+    targetPort: metrics
+    protocol: TCP
+  selector:
+    {{- include "kubepocket.selectorLabels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kubepocket.fullname" . }}-metrics
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubepocket.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: {{ .Values.service.metricsPort }}
+    targetPort: metrics
+    protocol: TCP
+  selector:
+    {{- include "kubepocket.selectorLabels" . | nindent 4 }}

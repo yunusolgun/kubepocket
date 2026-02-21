@@ -1,0 +1,23 @@
+# helm/kubepocket/Chart.yaml
+apiVersion: v2
+name: kubepocket
+description: Kubernetes cost and resource monitoring with AI-powered anomaly detection and forecasting
+type: application
+version: 2.0.1
+appVersion: 2.0.1
+icon: https://raw.githubusercontent.com/kubepocket/artifacts/main/logo.png
+home: https://kubepocket.com
+sources:
+  - https://github.com/kubepocket/kubepocket
+keywords:
+  - kubernetes
+  - monitoring
+  - cost-optimization
+  - finops
+  - anomaly-detection
+  - forecasting
+  - ml
+maintainers:
+  - name: KubePocket Team
+    email: info@kubepocket.com
+    url: https://kubepocket.com

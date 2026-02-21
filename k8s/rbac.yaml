@@ -1,0 +1,46 @@
+# k8s/rbac.yaml - RBAC permissions for Kubernetes API access
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubepocket-sa
+  namespace: kubepocket
+---
+# ClusterRole with read-only permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubepocket-reader
+rules:
+  # Basic Kubernetes resources
+  - apiGroups: [""]
+    resources:
+      [
+        "pods",
+        "namespaces",
+        "nodes",
+        "persistentvolumes",
+        "persistentvolumeclaims",
+      ]
+    verbs: ["get", "list", "watch"]
+  # Metrics API for resource usage
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]
+  # Apps resources (deployments, statefulsets)
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "replicasets"]
+    verbs: ["get", "list", "watch"]
+---
+# Bind ClusterRole to ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubepocket-reader-binding
+subjects:
+  - kind: ServiceAccount
+    name: kubepocket-sa
+    namespace: kubepocket
+roleRef:
+  kind: ClusterRole
+  name: kubepocket-reader
+  apiGroup: rbac.authorization.k8s.io

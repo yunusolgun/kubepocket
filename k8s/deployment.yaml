@@ -1,0 +1,89 @@
+# k8s/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubepocket
+  namespace: kubepocket
+  labels:
+    app: kubepocket
+    version: 1.0.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubepocket
+  template:
+    metadata:
+      labels:
+        app: kubepocket
+      annotations:
+        # Prometheus auto-discovery
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8001"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Service account with read-only permissions
+      serviceAccountName: kubepocket-sa
+      containers:
+        - name: kubepocket
+          image: kubepocket/kubepocket:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: api
+              containerPort: 8000
+            - name: metrics
+              containerPort: 8001
+          env:
+            - name: COLLECTOR_INTERVAL
+              valueFrom:
+                configMapKeyRef:
+                  name: kubepocket-config
+                  key: COLLECTOR_INTERVAL
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: kubepocket-config
+                  key: LOG_LEVEL
+            - name: DB_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: kubepocket-config
+                  key: DB_PATH
+          volumeMounts:
+            # Persistent data storage
+            - name: data
+              mountPath: /data
+            # Kubernetes config for cluster access (provided by customer)
+            - name: kubeconfig
+              mountPath: /root/.kube
+              readOnly: true
+          # Resource limits
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "200m"
+          # Health checks
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        # Persistent volume for SQLite database
+        - name: data
+          persistentVolumeClaim:
+            claimName: kubepocket-data
+        # Customer's kubeconfig (created during installation)
+        - name: kubeconfig
+          secret:
+            secretName: kubepocket-kubeconfig

@@ -1,0 +1,13 @@
+# k8s/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubepocket-config
+  namespace: kubepocket
+data:
+  # Collector runs every 5 minutes (300 seconds)
+  COLLECTOR_INTERVAL: "300"
+  # Log level: INFO, DEBUG, WARNING, ERROR
+  LOG_LEVEL: "INFO"
+  # Database path inside the container
+  DB_PATH: "/data/kubepocket.db"
