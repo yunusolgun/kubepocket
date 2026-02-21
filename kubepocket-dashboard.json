@@ -1,0 +1,61 @@
+{
+  "dashboard": {
+    "title": "KubePocket Monitoring",
+    "panels": [
+      {
+        "title": "Namespace CPU Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "kubepocket_namespace_cpu_cores",
+            "legendFormat": "{{namespace}}"
+          }
+        ]
+      },
+      {
+        "title": "Namespace Memory Usage (GiB)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "kubepocket_namespace_memory_gib",
+            "legendFormat": "{{namespace}}"
+          }
+        ]
+      },
+      {
+        "title": "Anomaly Score",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "kubepocket_anomaly_score",
+            "legendFormat": "{{namespace}}-{{metric}}"
+          }
+        ]
+      },
+      {
+        "title": "CPU Forecast (7-day)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "kubepocket_forecast_cpu_7d",
+            "legendFormat": "{{namespace}}"
+          }
+        ]
+      },
+      {
+        "title": "Exporter Status",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 24, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "kubepocket_up"
+          }
+        ]
+      }
+    ]
+  }
+}

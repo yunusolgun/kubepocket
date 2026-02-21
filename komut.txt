@@ -1,0 +1,164 @@
+
+
+# Minikube'u sil
+minikube delete
+
+# Yeni minikube başlat (yeterli kaynakla)
+minikube start --cpus=4 --memory=8192 --driver=docker
+
+# Durumu kontrol et
+kubectl get nodes
+minikube status
+
+
+
+
+# Proje dizininde olduğundan emin ol
+cd /Users/yunusolgun/Desktop/STUDY/python-works/DS/kubepocket
+
+# Docker imajını build et
+docker build --no-cache -t kubepocket/kubepocket:2.0.5 -f docker/Dockerfile .
+
+# Minikube'a yükle
+minikube image load kubepocket/kubepocket:2.0.5
+
+# İmajın yüklendiğini kontrol et
+minikube image ls | grep kubepocket
+
+
+
+# Namespace oluştur
+kubectl create namespace kubepocket
+
+
+# ServiceMonitor CRD'sini yükle
+kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml
+
+
+# KubePocket'i kur
+helm install kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --set image.tag=2.0.5 \
+  --set image.pullPolicy=IfNotPresent
+
+# Pod'un hazır olmasını bekle
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=kubepocket -n kubepocket --timeout=60s
+kubectl get pods -n kubepocket
+
+
+
+
+# Prometheus community repo'sunu ekle
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+
+# Kube-prometheus-stack'i kur (TEK KOMUTTA Prometheus + Grafana)
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace kubepocket \
+  --set grafana.enabled=true \
+  --set grafana.adminPassword=admin123 \
+  --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
+  --set prometheus.prometheusSpec.podMonitorSelectorNilUsesHelmValues=false
+
+# Pod'ların hazır olmasını bekle (birkaç dakika sürebilir)
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana -n kubepocket --timeout=120s
+kubectl get pods -n kubepocket
+
+
+cat << EOF | kubectl apply -n kubepocket -f -
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kubepocket-monitor
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubepocket
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+  namespaceSelector:
+    matchNames:
+    - kubepocket
+EOF
+
+
+# Grafana'ya port forward (yeni terminal)
+kubectl port-forward -n kubepocket service/monitoring-grafana 3000:80 &
+
+# KubePocket metrics'e port forward (isteğe bağlı)
+kubectl port-forward -n kubepocket service/kubepocket 8001:8001 &
+
+
+
+
+# Dashboard JSON'unu indir ve uygula
+cat > kubepocket-dashboard.json << 'EOF'
+{
+  "dashboard": {
+    "title": "KubePocket Monitoring",
+    "panels": [
+      {
+        "title": "Namespace CPU Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "kubepocket_namespace_cpu_cores",
+            "legendFormat": "{{namespace}}"
+          }
+        ]
+      },
+      {
+        "title": "Namespace Memory Usage (GiB)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "kubepocket_namespace_memory_gib",
+            "legendFormat": "{{namespace}}"
+          }
+        ]
+      },
+      {
+        "title": "Anomaly Score",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "kubepocket_anomaly_score",
+            "legendFormat": "{{namespace}}-{{metric}}"
+          }
+        ]
+      },
+      {
+        "title": "CPU Forecast (7-day)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "kubepocket_forecast_cpu_7d",
+            "legendFormat": "{{namespace}}"
+          }
+        ]
+      },
+      {
+        "title": "Exporter Status",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 24, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "kubepocket_up"
+          }
+        ]
+      }
+    ]
+  }
+}
+EOF
+
+# Grafana'da import et (yukarıdaki adımlarla)
