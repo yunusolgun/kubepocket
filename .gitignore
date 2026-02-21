@@ -34,7 +34,7 @@ dmypy.json
 !Chart.yaml
 
 # Docker
-Dockerfile
+#Dockerfile
 .dockerignore
 *.tar
 *.tar.gz
