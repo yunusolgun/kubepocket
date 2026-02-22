@@ -1,0 +1,21 @@
+# CrashLoopBackOff — sürekli çöküp restart alan pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: crash-loop-pod
+  namespace: default
+  labels:
+    scenario: crash-loop
+spec:
+  containers:
+  - name: crasher
+    image: busybox
+    command: ["sh", "-c", "echo 'Başlıyorum...' && sleep 5 && exit 1"]
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "32Mi"
+      limits:
+        cpu: "100m"
+        memory: "64Mi"
+  restartPolicy: Always

@@ -1,0 +1,21 @@
+# CPU limitini zorlayan pod — stress tool ile CPU'yu doldurur
+apiVersion: v1
+kind: Pod
+metadata:
+  name: high-cpu-pod
+  namespace: default
+  labels:
+    scenario: high-cpu
+spec:
+  containers:
+  - name: cpu-stress
+    image: polinux/stress
+    command: ["stress"]
+    args: ["--cpu", "2", "--timeout", "3600s"]
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"      # 200m limit ama 2 CPU kullanmaya çalışıyor
+        memory: "128Mi"

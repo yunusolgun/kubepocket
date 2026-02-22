@@ -1,0 +1,21 @@
+# Yüksek memory kullanan ama limit altında kalan pod — anomaly tespiti için
+apiVersion: v1
+kind: Pod
+metadata:
+  name: high-memory-pod
+  namespace: default
+  labels:
+    scenario: high-memory
+spec:
+  containers:
+  - name: memory-hog
+    image: polinux/stress
+    command: ["stress"]
+    args: ["--vm", "1", "--vm-bytes", "150M", "--timeout", "3600s"]
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "100m"
+        memory: "256Mi"   # Limit yüksek, OOM olmaz ama çok memory yer

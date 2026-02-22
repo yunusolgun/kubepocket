@@ -1,0 +1,21 @@
+# Pending kalan pod — var olmayan node selector ile asla schedule edilemez
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pending-pod
+  namespace: default
+  labels:
+    scenario: pending
+spec:
+  nodeSelector:
+    gpu: "true"           # Böyle bir node yok → pod Pending kalır
+  containers:
+  - name: pending
+    image: nginx:alpine
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"

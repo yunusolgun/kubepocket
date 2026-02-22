@@ -1,0 +1,22 @@
+# Anomaly senaryosu — diğer podlara göre çok yüksek CPU request
+# Bu pod namespace ortalamasının çok üstünde kaynak istiyor
+apiVersion: v1
+kind: Pod
+metadata:
+  name: anomaly-cpu-pod
+  namespace: default
+  labels:
+    scenario: anomaly-cpu
+spec:
+  containers:
+  - name: anomaly
+    image: polinux/stress
+    command: ["stress"]
+    args: ["--cpu", "1", "--timeout", "3600s"]
+    resources:
+      requests:
+        cpu: "800m"       # Diğerleri 50-100m isterken bu 800m istiyor → anomaly
+        memory: "128Mi"
+      limits:
+        cpu: "1000m"
+        memory: "256Mi"

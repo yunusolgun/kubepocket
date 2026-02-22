@@ -1,0 +1,22 @@
+# Hem CPU hem memory'de yüksek request yapan pod
+# Maliyet analizi için iyi örnek
+apiVersion: v1
+kind: Pod
+metadata:
+  name: resource-hungry-pod
+  namespace: default
+  labels:
+    scenario: resource-hungry
+spec:
+  containers:
+  - name: hungry
+    image: polinux/stress
+    command: ["stress"]
+    args: ["--cpu", "1", "--vm", "1", "--vm-bytes", "100M", "--timeout", "3600s"]
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "256Mi"
+      limits:
+        cpu: "800m"
+        memory: "512Mi"

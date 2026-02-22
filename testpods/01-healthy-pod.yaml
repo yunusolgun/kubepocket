@@ -1,0 +1,19 @@
+# Normal, sağlıklı çalışan pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: healthy-pod
+  namespace: default
+  labels:
+    scenario: healthy
+spec:
+  containers:
+  - name: healthy
+    image: nginx:alpine
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"

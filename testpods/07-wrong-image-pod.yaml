@@ -1,0 +1,19 @@
+# ImagePullBackOff — yanlış/olmayan image → pod hiç başlamaz
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wrong-image-pod
+  namespace: default
+  labels:
+    scenario: image-pull-error
+spec:
+  containers:
+  - name: wrong-image
+    image: this-image-does-not-exist:v999
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "32Mi"
+      limits:
+        cpu: "100m"
+        memory: "64Mi"
