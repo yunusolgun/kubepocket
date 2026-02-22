@@ -1,62 +1,53 @@
 #!/usr/bin/env python3
 # collector/statistics.py
-import logging
-from sklearn.linear_model import LinearRegression
-import numpy as np
-from datetime import datetime, timedelta
-from db.models import Statistics, Alert, Metric
-from db.repository import MetricRepository
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from sqlalchemy.orm import Session
+from db.repository import MetricRepository
+from db.models import Statistics, Alert, Metric
+from datetime import datetime, timedelta
+import numpy as np
+from sklearn.linear_model import LinearRegression
+import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 class StatisticsCalculator:
-    def __init__(self):
-        self.repo = MetricRepository()
+    def __init__(self, db: Session):
+        self.db = db
+        self.repo = MetricRepository(db)
 
     def calculate_statistics(self):
-        """Calculate statistics for each namespace"""
+        """Son 7 günün verisinden namespace bazlı istatistik hesapla"""
         logger.info("📊 Calculating statistics...")
 
-        # Get last 7 days of data
         since = datetime.utcnow() - timedelta(days=7)
-        metrics = self.repo.db.query(Metric).filter(
-            Metric.timestamp >= since).all()
+        metrics = self.db.query(Metric).filter(Metric.timestamp >= since).all()
 
         if len(metrics) < 10:
-            logger.warning(
-                "⚠️ Insufficient data for statistics (need at least 10 records)")
+            logger.warning(f"⚠️ Insufficient data ({len(metrics)} records, need 10)")
             return
 
-        # Group by namespace
+        # Namespace bazlı grupla
         namespaces = {}
         for m in metrics:
             if m.namespace not in namespaces:
-                namespaces[m.namespace] = {
-                    'cpu': [], 'memory': [], 'timestamps': []}
-
+                namespaces[m.namespace] = {'cpu': [], 'memory': [], 'timestamps': []}
             namespaces[m.namespace]['cpu'].append(m.total_cpu)
             namespaces[m.namespace]['memory'].append(m.total_memory)
-            namespaces[m.namespace]['timestamps'].append(
-                m.timestamp.timestamp())
+            namespaces[m.namespace]['timestamps'].append(m.timestamp.timestamp())
 
-        # Calculate statistics for each namespace
         for ns, data in namespaces.items():
             self._calculate_namespace_stats(ns, data)
 
-        logger.info(
-            f"✅ Statistics calculated for {len(namespaces)} namespaces")
-        self.repo.db.commit()
+        self.db.commit()
+        logger.info(f"✅ Statistics calculated for {len(namespaces)} namespaces")
 
     def _calculate_namespace_stats(self, namespace, data):
-        """Calculate statistics for a single namespace"""
-
-        # CPU statistics
         cpu_array = np.array(data['cpu'])
         cpu_stats = Statistics(
             namespace=namespace,
@@ -68,9 +59,8 @@ class StatisticsCalculator:
             trend_slope=self._calculate_trend(data['timestamps'], data['cpu']),
             calculated_at=datetime.utcnow()
         )
-        self.repo.db.add(cpu_stats)
+        self.db.add(cpu_stats)
 
-        # Memory statistics
         memory_array = np.array(data['memory'])
         memory_stats = Statistics(
             namespace=namespace,
@@ -79,98 +69,82 @@ class StatisticsCalculator:
             std_dev=float(np.std(memory_array)),
             min_value=float(np.min(memory_array)),
             max_value=float(np.max(memory_array)),
-            trend_slope=self._calculate_trend(
-                data['timestamps'], data['memory']),
+            trend_slope=self._calculate_trend(data['timestamps'], data['memory']),
             calculated_at=datetime.utcnow()
         )
-        self.repo.db.add(memory_stats)
+        self.db.add(memory_stats)
 
     def _calculate_trend(self, timestamps, values):
-        """Calculate trend using linear regression"""
         if len(timestamps) < 2:
             return 0.0
-
         X = np.array(timestamps).reshape(-1, 1)
         y = np.array(values)
-
         model = LinearRegression()
         model.fit(X, y)
-
         return float(model.coef_[0])
 
     def detect_anomalies(self):
-        """Detect anomalies using Z-score method"""
+        """Son 1 saatteki veride Z-score anomaly tespiti"""
         logger.info("🚨 Detecting anomalies...")
 
-        # Get last 1 hour of data
         recent = self.repo.get_latest_metrics(hours=1)
 
         for metric in recent:
-            # Get latest statistics for this namespace
-            cpu_stats = self.repo.db.query(Statistics).filter(
-                Statistics.namespace == metric.namespace,
-                Statistics.metric_type == 'cpu'
-            ).order_by(Statistics.calculated_at.desc()).first()
+            cpu_stats = (
+                self.db.query(Statistics)
+                .filter(
+                    Statistics.namespace == metric.namespace,
+                    Statistics.metric_type == 'cpu'
+                )
+                .order_by(Statistics.calculated_at.desc())
+                .first()
+            )
 
             if cpu_stats and cpu_stats.std_dev > 0:
-                # Calculate Z-score
-                z_score = abs(metric.total_cpu -
-                              cpu_stats.avg_value) / cpu_stats.std_dev
+                z_score = abs(metric.total_cpu - cpu_stats.avg_value) / cpu_stats.std_dev
 
-                if z_score > 3:  # 3 sigma rule
+                if z_score > 3:
                     self._create_anomaly_alert(
-                        metric.namespace,
-                        'cpu',
-                        metric.total_cpu,
-                        cpu_stats.avg_value,
-                        z_score
+                        metric.namespace, 'cpu',
+                        metric.total_cpu, cpu_stats.avg_value, z_score
                     )
 
-                # Check trend
                 if abs(cpu_stats.trend_slope) > 0.1:
                     direction = "increasing" if cpu_stats.trend_slope > 0 else "decreasing"
-                    self._create_trend_alert(
-                        metric.namespace,
-                        'cpu',
-                        cpu_stats.trend_slope,
-                        direction
-                    )
+                    self._create_trend_alert(metric.namespace, 'cpu', cpu_stats.trend_slope, direction)
+
+        self.db.commit()
 
     def _create_anomaly_alert(self, namespace, metric_type, current, avg, z_score):
-        """Create anomaly alert"""
-
-        message = f"⚠️ Anomaly detected: {namespace} namespace {metric_type} usage is unusually high! "
-        message += f"(Current: {current:.2f}, Average: {avg:.2f}, Z-Score: {z_score:.2f})"
-
-        alert = Alert(
+        message = (
+            f"⚠️ Anomaly: {namespace}/{metric_type} unusually high! "
+            f"(Current: {current:.2f}, Avg: {avg:.2f}, Z-Score: {z_score:.2f})"
+        )
+        self.db.add(Alert(
             namespace=namespace,
             message=message,
             severity='anomaly',
             created_at=datetime.utcnow()
-        )
-        self.repo.db.add(alert)
-        logger.info(f"🚨 Anomaly alert created: {message}")
+        ))
+        logger.info(f"🚨 {message}")
 
     def _create_trend_alert(self, namespace, metric_type, slope, direction):
-        """Create trend alert"""
-
-        message = f"📈 Trend detected: {namespace} namespace {metric_type} usage is consistently {direction} "
-        message += f"(slope: {slope:.4f})"
-
-        alert = Alert(
+        message = (
+            f"📈 Trend: {namespace}/{metric_type} consistently {direction} "
+            f"(slope: {slope:.4f})"
+        )
+        self.db.add(Alert(
             namespace=namespace,
             message=message,
             severity='warning',
             created_at=datetime.utcnow()
-        )
-        self.repo.db.add(alert)
-        logger.info(f"📊 Trend alert created: {message}")
+        ))
+        logger.info(f"📊 {message}")
 
     def forecast(self, namespace, metric_type, days=7):
-        """Forecast future usage"""
-        # Get last 30 days of data
+        """Gelecek N gün için tahmin"""
         since = datetime.utcnow() - timedelta(days=30)
-        metrics = self.repo.db.query(Metric).filter(
+        metrics = self.db.query(Metric).filter(
             Metric.namespace == namespace,
             Metric.timestamp >= since
         ).all()
@@ -178,43 +152,31 @@ class StatisticsCalculator:
         if len(metrics) < 5:
             return None
 
-        # Calculate daily averages
         daily = {}
         for m in metrics:
             day = m.timestamp.strftime('%Y-%m-%d')
             if day not in daily:
-                daily[day] = {'cpu': [], 'memory': []}
+                daily[day] = []
+            daily[day].append(m.total_cpu if metric_type == 'cpu' else m.total_memory)
 
-            if metric_type == 'cpu':
-                daily[day]['cpu'].append(m.total_cpu)
-            else:
-                daily[day]['memory'].append(m.total_memory)
-
-        # Prepare data for regression
-        days_list = []
-        values_list = []
-
+        days_list, values_list = [], []
         for day in sorted(daily.keys()):
             days_list.append(len(days_list))
-            if metric_type == 'cpu':
-                values_list.append(np.mean(daily[day]['cpu']))
-            else:
-                values_list.append(np.mean(daily[day]['memory']))
+            values_list.append(float(np.mean(daily[day])))
 
         if len(days_list) < 3:
             return None
 
-        # Linear regression for forecasting
         X = np.array(days_list).reshape(-1, 1)
         y = np.array(values_list)
-
         model = LinearRegression()
         model.fit(X, y)
 
-        # Forecast future days
-        forecast_days = np.array(
-            range(len(days_list), len(days_list) + days)).reshape(-1, 1)
-        forecast_values = model.predict(forecast_days)
+        forecast_x = np.array(range(len(days_list), len(days_list) + days)).reshape(-1, 1)
+        forecast_values = model.predict(forecast_x)
+
+        volatility = np.std(values_list) / (np.mean(values_list) + 0.01)
+        confidence = max(0.0, min(1.0, 1 - volatility))
 
         return {
             'historical_days': days_list,
@@ -222,33 +184,48 @@ class StatisticsCalculator:
             'forecast_days': list(range(len(days_list), len(days_list) + days)),
             'forecast_values': forecast_values.tolist(),
             'trend': float(model.coef_[0]),
-            'confidence': self._calculate_confidence(values_list, forecast_values)
+            'confidence': confidence
         }
 
-    def _calculate_confidence(self, historical, forecast):
-        """Calculate forecast confidence (simplified R²)"""
-        if len(historical) < 3:
-            return 0.5
 
-        # Simple confidence score based on volatility
-        volatility = np.std(historical) / (np.mean(historical) + 0.01)
-        confidence = max(0, min(1, 1 - volatility))
+    def get_pod_anomalies(self, namespace=None):
+        """
+        Pod bazlı anomaly tespiti.
+        Her pod'un restart sayısını ve CPU request'ini
+        namespace ortalamasıyla karşılaştırır.
+        """
+        recent = self.repo.get_latest_per_namespace()
+        pod_anomalies = []
 
-        return confidence
+        for metric in recent:
+            if namespace and metric.namespace != namespace:
+                continue
 
-    def close(self):
-        self.repo.close()
+            ns_avg_cpu = metric.total_cpu / max(len(metric.pod_data), 1)
 
+            for pod in metric.pod_data:
+                pod_cpu = pod.get('cpu_request', 0)
+                restarts = pod.get('restart_count', 0)
 
-if __name__ == "__main__":
-    calc = StatisticsCalculator()
-    calc.calculate_statistics()
-    calc.detect_anomalies()
+                # CPU anomaly — namespace ortalamasının 3 katından fazla ise
+                cpu_ratio = pod_cpu / max(ns_avg_cpu, 0.001)
+                cpu_score = min(100.0, max(0.0, (cpu_ratio - 1) * 30))
 
-    # Example forecast
-    forecast = calc.forecast('default', 'cpu', days=7)
-    if forecast:
-        print(f"📈 CPU Forecast: {forecast['forecast_values']}")
-        print(f"📊 Confidence: {forecast['confidence']:.2%}")
+                # Restart anomaly — 5+ restart yüksek risk
+                restart_score = min(100.0, restarts * 10.0)
 
-    calc.close()
+                # Genel skor — ikisinin ağırlıklı ortalaması
+                anomaly_score = (cpu_score * 0.4) + (restart_score * 0.6)
+
+                pod_anomalies.append({
+                    'pod': pod.get('name', ''),
+                    'namespace': metric.namespace,
+                    'cpu_score': round(cpu_score, 2),
+                    'restart_score': round(restart_score, 2),
+                    'anomaly_score': round(anomaly_score, 2),
+                    'cpu_request': pod_cpu,
+                    'restarts': restarts,
+                    'status': pod.get('status', 'Unknown')
+                })
+
+        return sorted(pod_anomalies, key=lambda x: x['anomaly_score'], reverse=True)

@@ -248,9 +248,62 @@ kubectl exec -n kubepocket deploy/kubepocket -- \
 # Manuel metrik topla
 kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.py
 
+# Önce birkaç kez collector çalıştır
+kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.py
+kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.py
+kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.py
+
+# Sonra statistics daemon'ı manuel çalıştır
+kubectl exec -n kubepocket deploy/kubepocket -- python collector/stats_daemon.py
+
+
 # Logları izle
 kubectl logs -n kubepocket deploy/kubepocket -f
 kubectl exec -n kubepocket deploy/kubepocket -- tail -f /var/log/kubepocket/api.log
 
 # Swagger UI
 open http://localhost:8000/docs
+
+    ~/De/ST/p/D/kubepocket    master ⇡1  kubectl exec -n kubepocket deploy/kubepocket -- cat /var/log/kubepocket/api.log | grep "Key:"
+   Key: kp_fa1262f4c44641ebbd374e5ab66d53f795fe70dffba797d174f5875f19024461
+
+    ~/De/ST/p/D/kubepocket    master  
+
+
+
+ ---------
+ minikube start
+
+eval $(minikube docker-env)
+docker build -t kubepocket:local -f docker/Dockerfile .
+
+helm install kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --create-namespace \
+  --set clusterName=minikube-local \
+  --set allowedOrigins=http://localhost:3000 \
+  --set serviceMonitor.enabled=false
+
+kubectl exec -n kubepocket deploy/kubepocket -- cat /var/log/kubepocket/api.log | grep "Key:"
+
+
+
+Adım 1 — Prometheus + Grafana'yı kur
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --create-namespace \
+  --set grafana.adminPassword=admin123 \
+  --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
+
+helm upgrade kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --set clusterName=minikube-local \
+  --set allowedOrigins=http://localhost:3000 \
+  --set serviceMonitor.enabled=true
+
+kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090
+
+kubectl label servicemonitor kubepocket -n kubepocket release=monitoring
+
+kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
+

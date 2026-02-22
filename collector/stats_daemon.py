@@ -16,31 +16,32 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def run_stats_daemon(interval=3600):  # Run every hour
-    """Statistics calculation daemon"""
+
+def run_stats_daemon(interval=3600):
     logger.info(f"📊 Statistics daemon started (interval: {interval}s)")
-    
+
     while True:
         try:
-            calc = StatisticsCalculator()
-            
-            # Calculate statistics
-            calc.calculate_statistics()
-            
-            # Detect anomalies
-            calc.detect_anomalies()
-            
-            calc.close()
-            
-            logger.info(f"😊 Sleeping for {interval} seconds...")
+            from db.models import SessionLocal
+            db = SessionLocal()
+            try:
+                calc = StatisticsCalculator(db)
+                calc.calculate_statistics()
+                calc.detect_anomalies()
+                logger.info("✅ Statistics & anomaly detection complete")
+            finally:
+                db.close()
+
+            logger.info(f"😴 Sleeping {interval}s...")
             time.sleep(interval)
-            
+
         except KeyboardInterrupt:
             logger.info("👋 Shutting down...")
             break
         except Exception as e:
-            logger.error(f"❌ Error: {e}")
+            logger.error(f"❌ Error: {e}", exc_info=True)
             time.sleep(60)
+
 
 if __name__ == "__main__":
     run_stats_daemon()

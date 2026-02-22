@@ -1,5 +1,6 @@
 # db/repository.py
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import datetime, timedelta
 from .models import Cluster, Metric, Alert
 
@@ -43,7 +44,10 @@ class MetricRepository:
         return saved_count
 
     def get_latest_metrics(self, cluster_id=None, namespace=None, hours=24):
-        """Son X saatlik metrikleri getir"""
+        """
+        Son X saatlik metrikleri getir.
+        Tarihsel trend analizi için tüm snapshot'ları döndürür.
+        """
         query = self.db.query(Metric)
 
         if cluster_id:
@@ -55,6 +59,35 @@ class MetricRepository:
         query = query.filter(Metric.timestamp >= since)
 
         return query.order_by(Metric.timestamp.desc()).all()
+
+    def get_latest_per_namespace(self, cluster_id=None):
+        """
+        Her namespace için sadece en son kaydı döndür.
+        Prometheus exporter'da kullanılır — aynı namespace'in
+        birden fazla serisi oluşmasını engeller.
+        """
+        # Her namespace'in en son timestamp'ini bul
+        subquery = (
+            self.db.query(
+                Metric.namespace,
+                func.max(Metric.timestamp).label('max_ts')
+            )
+        )
+        if cluster_id:
+            subquery = subquery.filter(Metric.cluster_id == cluster_id)
+
+        subquery = subquery.group_by(Metric.namespace).subquery()
+
+        # O timestamp'e sahip kayıtları getir
+        return (
+            self.db.query(Metric)
+            .join(
+                subquery,
+                (Metric.namespace == subquery.c.namespace) &
+                (Metric.timestamp == subquery.c.max_ts)
+            )
+            .all()
+        )
 
     def create_alert(self, cluster_id, namespace, message, severity='warning'):
         """Alert oluştur"""
