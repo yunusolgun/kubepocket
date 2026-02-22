@@ -10,7 +10,7 @@ echo "========================================="
 mkdir -p /data /var/log/kubepocket
 
 # Set database path
-export DB_PATH="/data/kubepocket.db"
+export DATABASE_PATH="/data/kubepocket.db"
 export LOG_DIR="/var/log/kubepocket"
 export PYTHONPATH="/app:${PYTHONPATH}"
 
@@ -64,7 +64,7 @@ echo "   - Resource forecasting (7-day prediction)"
 echo "   - Trend analysis"
 echo ""
 echo "📁 Logs: ${LOG_DIR}"
-echo "💾 Database: ${DB_PATH}"
+echo "💾 Database: ${DATABASE_PATH}"
 echo "========================================="
 
 # Graceful shutdown handler

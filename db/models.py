@@ -1,4 +1,4 @@
-# db/models.py - Updated version with Statistics table
+# db/models.py
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, JSON, Boolean, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -49,15 +49,30 @@ class Statistics(Base):
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
     namespace = Column(String)
     metric_type = Column(String)  # 'cpu', 'memory', 'restarts'
-    avg_value = Column(Float)     # 7-day average
-    std_dev = Column(Float)       # Standard deviation
-    min_value = Column(Float)     # Minimum value
-    max_value = Column(Float)     # Maximum value
-    trend_slope = Column(Float)   # Trend slope (positive/negative)
+    avg_value = Column(Float)
+    std_dev = Column(Float)
+    min_value = Column(Float)
+    max_value = Column(Float)
+    trend_slope = Column(Float)
     calculated_at = Column(DateTime, default=datetime.utcnow)
 
 
-# ✅ Environment variable'dan al, yoksa /app/data/kubepocket.db kullan
+class ApiKey(Base):
+    __tablename__ = 'api_keys'
+
+    id = Column(Integer, primary_key=True)
+    # Açıklayıcı isim: "prod-dashboard", "ci-pipeline"
+    name = Column(String, nullable=False)
+    # SHA256 hash — düz key asla saklanmaz
+    key_hash = Column(String, unique=True, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    # İzleme için: son ne zaman kullanıldı
+    last_used_at = Column(DateTime, nullable=True)
+    # Opsiyonel son kullanma tarihi
+    expires_at = Column(DateTime, nullable=True)
+
+
 DATABASE_PATH = os.getenv('DATABASE_PATH', '/app/data/kubepocket.db')
 DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 
@@ -67,7 +82,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
     Base.metadata.create_all(bind=engine)
-    print(f"✅ Database initialized successfully at {DATABASE_PATH}!")
+    print(f"✅ Database initialized at {DATABASE_PATH}")
 
 
 if __name__ == "__main__":

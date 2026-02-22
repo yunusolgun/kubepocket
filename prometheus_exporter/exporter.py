@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-from db.models import Statistics, Metric
+# prometheus_exporter/exporter.py
+from prometheus_client import REGISTRY
+from prometheus_client.core import GaugeMetricFamily
 from db.repository import MetricRepository
-from prometheus_client import start_http_server, generate_latest, REGISTRY
-from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily
-import time
+from db.models import Statistics, Metric, SessionLocal
 import sys
 import os
 import logging
@@ -11,81 +11,110 @@ import logging
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
+
+# Cluster adını environment variable'dan al.
+# Helm values.yaml'da veya k8s configmap'te set edilir.
+# Örnek: CLUSTER_NAME=production-eu-west-1
+CLUSTER_NAME = os.getenv('CLUSTER_NAME', 'default')
 
 
 class KubePocketCollector:
-    def __init__(self):
-        logger.info("🚀 Starting KubePocket Collector...")
-        self.repo = MetricRepository()
+    """
+    Prometheus custom collector.
+    Her scrape isteğinde collect() çağrılır.
+    Session her collect() çağrısında açılıp kapatılır —
+    uzun ömürlü bağlantı tutmak exporter'lar için iyi pratik değil.
+    """
 
     def collect(self):
+        db = SessionLocal()
         try:
-            logger.info("📡 Collecting metrics...")
-            metrics = self.repo.get_latest_metrics(hours=1)
+            logger.info("📡 Scraping metrics...")
+            repo = MetricRepository(db)
+            metrics = repo.get_latest_metrics(hours=1)
 
             if not metrics:
-                logger.warning("⚠️ No metrics found!")
+                logger.warning("⚠️ No metrics found in last 1 hour")
                 yield GaugeMetricFamily('kubepocket_up', 'KubePocket exporter status', value=1)
                 return
 
-            logger.info(f"✅ Found {len(metrics)} namespaces with metrics")
+            logger.info(
+                f"✅ Found {len(metrics)} metric records — cluster: {CLUSTER_NAME}")
 
-            # CPU Gauge
             cpu_gauge = GaugeMetricFamily(
-                'kubepocket_namespace_cpu_cores', 'CPU usage (cores)', labels=['namespace', 'cluster'])
-
-            # Memory Gauge
+                'kubepocket_namespace_cpu_cores',
+                'Total CPU request (cores) per namespace',
+                labels=['namespace', 'cluster']
+            )
             memory_gauge = GaugeMetricFamily(
-                'kubepocket_namespace_memory_gib', 'Memory usage (GiB)', labels=['namespace', 'cluster'])
-
-            # Anomaly metrics
+                'kubepocket_namespace_memory_gib',
+                'Total memory request (GiB) per namespace',
+                labels=['namespace', 'cluster']
+            )
+            restart_gauge = GaugeMetricFamily(
+                'kubepocket_namespace_restarts_total',
+                'Total pod restarts per namespace',
+                labels=['namespace', 'cluster']
+            )
             anomaly_gauge = GaugeMetricFamily(
-                'kubepocket_anomaly_score', 'Anomaly score (0-100)', labels=['namespace', 'metric', 'cluster'])
-
-            # Forecast metrics
-            forecast_cpu_gauge = GaugeMetricFamily(
-                'kubepocket_forecast_cpu_7d', 'CPU forecast 7 days', labels=['namespace', 'cluster'])
-
-            cluster_name = 'minikube'
+                'kubepocket_anomaly_score',
+                'Anomaly score (0-100, higher = more anomalous)',
+                labels=['namespace', 'metric_type', 'cluster']
+            )
+            forecast_gauge = GaugeMetricFamily(
+                'kubepocket_forecast_cpu_7d',
+                'Predicted CPU usage 7 days from now (cores)',
+                labels=['namespace', 'cluster']
+            )
 
             for m in metrics:
-                cpu_gauge.add_metric([m.namespace, cluster_name], m.total_cpu)
-                memory_gauge.add_metric(
-                    [m.namespace, cluster_name], m.total_memory)
+                labels = [m.namespace, CLUSTER_NAME]
 
-                stats = self.repo.db.query(Statistics).filter(
-                    Statistics.namespace == m.namespace
-                ).order_by(Statistics.calculated_at.desc()).first()
+                cpu_gauge.add_metric(labels, m.total_cpu)
+                memory_gauge.add_metric(labels, m.total_memory)
+                restart_gauge.add_metric(labels, m.total_restarts)
+
+                # İstatistik varsa anomaly score ve forecast hesapla
+                stats = (
+                    db.query(Statistics)
+                    .filter(
+                        Statistics.namespace == m.namespace,
+                        Statistics.metric_type == 'cpu'
+                    )
+                    .order_by(Statistics.calculated_at.desc())
+                    .first()
+                )
 
                 if stats and stats.std_dev > 0:
                     z_score = abs(m.total_cpu - stats.avg_value) / \
                         stats.std_dev
-                    anomaly_score = min(100, z_score * 20)
+                    anomaly_score = min(100.0, z_score * 20)
                     anomaly_gauge.add_metric(
-                        [m.namespace, 'cpu', cluster_name], anomaly_score)
+                        [m.namespace, 'cpu', CLUSTER_NAME], anomaly_score)
 
-                    forecast_value = stats.avg_value + stats.trend_slope * 7
-                    forecast_cpu_gauge.add_metric(
-                        [m.namespace, cluster_name], max(0, forecast_value))
+                    forecast_value = stats.avg_value + (stats.trend_slope * 7)
+                    forecast_gauge.add_metric(labels, max(0.0, forecast_value))
 
             yield cpu_gauge
             yield memory_gauge
+            yield restart_gauge
             yield anomaly_gauge
-            yield forecast_cpu_gauge
+            yield forecast_gauge
             yield GaugeMetricFamily('kubepocket_up', 'KubePocket exporter status', value=1)
 
         except Exception as e:
-            logger.error(f"❌ Error: {e}")
+            logger.error(f"❌ Collect error: {e}", exc_info=True)
             yield GaugeMetricFamily('kubepocket_up', 'KubePocket exporter status', value=0)
+        finally:
+            db.close()
 
-    def close(self):
-        self.repo.close()
 
-
-def start_exporter(port=8001):
+def start_exporter(port: int = 8001):
     from prometheus_client import make_wsgi_app
     from wsgiref.simple_server import make_server
 
@@ -93,14 +122,14 @@ def start_exporter(port=8001):
     app = make_wsgi_app()
     httpd = make_server('0.0.0.0', port, app)
 
-    # 🔥 DÜZELTİLDİ: Database yolunu environment variable'dan al
-    db_path = os.getenv('DATABASE_PATH', '/app/data/kubepocket.db')
+    logger.info(f"🚀 Prometheus exporter listening on :{port}/metrics")
+    logger.info(f"🏷️  Cluster label: {CLUSTER_NAME}")
     logger.info(
-        f"🚀 Prometheus exporter running at http://localhost:{port}/metrics")
-    logger.info(f"💾 Database: {db_path}")
+        f"💾 Database: {os.getenv('DATABASE_PATH', '/app/data/kubepocket.db')}")
 
     httpd.serve_forever()
 
 
 if __name__ == "__main__":
-    start_exporter()
+    port = int(os.getenv('EXPORTER_PORT', '8001'))
+    start_exporter(port)

@@ -27,11 +27,15 @@ spec:
         
         env:
         - name: DATABASE_PATH
-          value: /app/data/kubepocket.db  # Doğru yol
+          value: /data/kubepocket.db
         - name: NAMESPACE
           value: {{ .Values.watchNamespace | default .Release.Namespace }}
         - name: LOG_LEVEL
           value: {{ .Values.logLevel | default "INFO" }}
+        - name: CLUSTER_NAME
+          value: {{ .Values.clusterName | default "default" }}
+        - name: ALLOWED_ORIGINS
+          value: {{ .Values.allowedOrigins | default "http://localhost:3000" }}
         
         ports:
         - name: api  # 🔥 DÜZELTİLDİ: Port ismi "api" olarak tanımlandı

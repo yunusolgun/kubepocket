@@ -1,13 +1,17 @@
 # db/repository.py
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from .models import Cluster, Metric, Alert, SessionLocal
-import json
+from .models import Cluster, Metric, Alert
+
 
 class MetricRepository:
-    def __init__(self, db: Session = None):
-        self.db = db or SessionLocal()
-    
+    def __init__(self, db: Session):
+        """
+        db parametresi zorunlu — FastAPI Depends(get_db) üzerinden gelir.
+        Repository kendi session açmaz, dışarıdan alır.
+        """
+        self.db = db
+
     def get_or_create_cluster(self, name, context):
         """Cluster'ı bul veya oluştur"""
         cluster = self.db.query(Cluster).filter(Cluster.name == name).first()
@@ -18,7 +22,7 @@ class MetricRepository:
             self.db.refresh(cluster)
             print(f"✅ Yeni cluster oluşturuldu: {name}")
         return cluster
-    
+
     def save_metrics(self, cluster_id, metrics_data):
         """Metrikleri veritabanına kaydet"""
         saved_count = 0
@@ -33,25 +37,25 @@ class MetricRepository:
             )
             self.db.add(metric)
             saved_count += 1
-        
+
         self.db.commit()
         print(f"✅ {saved_count} namespace metriği kaydedildi")
         return saved_count
-    
+
     def get_latest_metrics(self, cluster_id=None, namespace=None, hours=24):
         """Son X saatlik metrikleri getir"""
         query = self.db.query(Metric)
-        
+
         if cluster_id:
             query = query.filter(Metric.cluster_id == cluster_id)
         if namespace:
             query = query.filter(Metric.namespace == namespace)
-        
+
         since = datetime.utcnow() - timedelta(hours=hours)
         query = query.filter(Metric.timestamp >= since)
-        
+
         return query.order_by(Metric.timestamp.desc()).all()
-    
+
     def create_alert(self, cluster_id, namespace, message, severity='warning'):
         """Alert oluştur"""
         alert = Alert(
@@ -64,13 +68,10 @@ class MetricRepository:
         self.db.commit()
         print(f"🚨 Alert oluşturuldu: {message}")
         return alert
-    
+
     def get_active_alerts(self, cluster_id=None):
         """Çözülmemiş alertleri getir"""
         query = self.db.query(Alert).filter(Alert.resolved == False)
         if cluster_id:
             query = query.filter(Alert.cluster_id == cluster_id)
         return query.all()
-    
-    def close(self):
-        self.db.close()

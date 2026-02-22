@@ -162,3 +162,95 @@ cat > kubepocket-dashboard.json << 'EOF'
 EOF
 
 # Grafana'da import et (yukarıdaki adımlarla)
+
+
+-----------  CLAUDE -----------  
+
+CLAUDE sonrası helm install
+
+helm install kubepocket kubepocket/kubepocket \
+  --set clusterName=prod-eu-west-1 \
+  --set allowedOrigins=https://dashboard.benimfirmam.com
+
+
+
+
+# İlk key'i pod loglarından al
+kubectl logs -n kubepocket deploy/kubepocket | grep "Key:"
+
+# Sonraki isteklerde header ile gönder
+curl -H "X-API-Key: kp_a3f9..." https://api.kubepocket.com/api/metrics/summary
+
+# Yeni key oluştur (örn: CI/CD için)
+curl -X POST -H "X-API-Key: kp_a3f9..." \
+  -d '{"name": "github-actions"}' \
+  https://api.kubepocket.com/api/keys/
+
+
+
+
+Adım 2 — Docker image'ı minikube içinde build et
+Minikube'un kendi Docker daemon'ını kullanacağız — böylece image'ı ayrıca push etmene gerek kalmaz.
+
+eval $(minikube docker-env)
+Bu komutu çalıştırınca terminalin Docker'ı artık minikube'un içine bağlanır. Sonra:
+docker build -t kubepocket:local -f docker/Dockerfile .
+Bitince çıktıyı yapıştır.
+
+Adım 4 — Helm ile kur
+helm install kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --create-namespace \
+  --set clusterName=minikube-local \
+  --set allowedOrigins=http://localhost:3000
+
+helm install kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --create-namespace \
+  --set clusterName=minikube-local \
+  --set allowedOrigins=http://localhost:3000 \
+  --set serviceMonitor.enabled=false
+
+kubectl exec -n kubepocket deploy/kubepocket -- cat /var/log/kubepocket/api.log | grep "Key:"
+
+
+
+kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.py
+
+
+curl -s \
+  -H "X-API-Key: kp_b99fa284d061fe869a9386ab1b655527765c936b9793aba654010e3d1ef469d9" \
+  http://localhost:8000/api/metrics/summary | python3 -m json.tool
+
+# Namespace metrikleri
+curl -s \
+  -H "X-API-Key: kp_b99fa284d061fe869a9386ab1b655527765c936b9793aba654010e3d1ef469d9" \
+  http://localhost:8000/api/metrics/namespaces | python3 -m json.tool
+
+# Cluster listesi
+curl -s \
+  -H "X-API-Key: kp_b99fa284d061fe869a9386ab1b655527765c936b9793aba654010e3d1ef469d9" \
+  http://localhost:8000/api/clusters/ | python3 -m json.tool
+
+# Swagger UI — tarayıcıda aç
+open http://localhost:8000/docs
+
+
+
+ Günlük Kullanım Komutları
+bash# Port-forward aç (her oturumda)
+kubectl port-forward -n kubepocket deploy/kubepocket 8000:8000
+
+# API key'ini göster
+kubectl exec -n kubepocket deploy/kubepocket -- \
+  sqlite3 /data/kubepocket.db "SELECT name, created_at FROM api_keys WHERE is_active=1;"
+
+# Manuel metrik topla
+kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.py
+
+# Logları izle
+kubectl logs -n kubepocket deploy/kubepocket -f
+kubectl exec -n kubepocket deploy/kubepocket -- tail -f /var/log/kubepocket/api.log
+
+# Swagger UI
+open http://localhost:8000/docs

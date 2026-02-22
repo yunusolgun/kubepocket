@@ -1,15 +1,21 @@
 # api/routes/alerts.py
-from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from api.auth import get_current_key
+from db.models import Alert, ApiKey
+from db.repository import MetricRepository
+from db.dependencies import get_db
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__)))))
 
-from db.repository import MetricRepository
-from pydantic import BaseModel
 
 router = APIRouter()
+
 
 class AlertResponse(BaseModel):
     id: int
@@ -18,17 +24,21 @@ class AlertResponse(BaseModel):
     severity: str
     created_at: datetime
 
+
 @router.get("/", response_model=List[AlertResponse])
-async def get_alerts(active_only: bool = True):
-    """Aktif uyarıları getir"""
-    repo = MetricRepository()
-    
+async def get_alerts(
+    active_only: bool = True,
+    db: Session = Depends(get_db),
+    _auth: ApiKey = Depends(get_current_key)
+):
+    repo = MetricRepository(db)
+
     if active_only:
         alerts = repo.get_active_alerts()
     else:
-        alerts = repo.db.query(repo.db.models.Alert).all()
-    
-    result = [
+        alerts = db.query(Alert).all()
+
+    return [
         AlertResponse(
             id=a.id,
             namespace=a.namespace,
@@ -38,25 +48,20 @@ async def get_alerts(active_only: bool = True):
         )
         for a in alerts
     ]
-    
-    repo.close()
-    return result
+
 
 @router.post("/{alert_id}/resolve")
-async def resolve_alert(alert_id: int):
-    """Uyarıyı çözüldü olarak işaretle"""
-    repo = MetricRepository()
-    
-    alert = repo.db.query(repo.db.models.Alert).filter(
-        repo.db.models.Alert.id == alert_id
-    ).first()
-    
+async def resolve_alert(
+    alert_id: int,
+    db: Session = Depends(get_db),
+    _auth: ApiKey = Depends(get_current_key)
+):
+    alert = db.query(Alert).filter(Alert.id == alert_id).first()
+
     if not alert:
-        repo.close()
         raise HTTPException(status_code=404, detail="Alert not found")
-    
+
     alert.resolved = True
-    repo.db.commit()
-    
-    repo.close()
+    db.commit()
+
     return {"status": "resolved", "id": alert_id}

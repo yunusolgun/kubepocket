@@ -5,10 +5,15 @@
 replicaCount: 1
 
 # Docker image configuration
+#image:
+#  repository: kubepocket/kubepocket
+#  tag: 2.0.3
+#  pullPolicy: IfNotPresent
+
 image:
-  repository: kubepocket/kubepocket
-  tag: 2.0.3
-  pullPolicy: IfNotPresent
+  repository: kubepocket
+  tag: local
+  pullPolicy: Never
 
 # Image pull secrets (if using private registry)
 imagePullSecrets: []
@@ -202,3 +207,11 @@ config:
 
 # 🔥 YENİ: Log seviyesi
 logLevel: INFO
+
+# Cluster adı — Prometheus metric label'larında görünür.
+# Her müşteri için farklı set edilmeli (örn: prod-eu, staging-us)
+clusterName: "default"
+
+# API'ye erişebilecek frontend URL'leri (virgülle ayrılmış)
+# Örnek: "https://app.kubepocket.com,https://dashboard.mycompany.com"
+allowedOrigins: "http://localhost:3000"

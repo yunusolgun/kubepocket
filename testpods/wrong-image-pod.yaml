@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wrong-image-pod
+  namespace: kubepocket
+spec:
+  containers:
+    - name: wrong-container
+      image: olmayan-image:latest # ❌ Bu image yok!
