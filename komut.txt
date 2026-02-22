@@ -307,3 +307,12 @@ kubectl label servicemonitor kubepocket -n kubepocket release=monitoring
 
 kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
 
+---------
+
+# Önce birkaç kez collector çalıştır
+kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.py
+kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.py
+kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.py
+
+# Sonra statistics daemon'ı manuel çalıştır
+kubectl exec -n kubepocket deploy/kubepocket -- python collector/stats_daemon.py
