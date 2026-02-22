@@ -41,3 +41,45 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+{{/*
+PostgreSQL host — internal subchart veya external
+*/}}
+{{- define "kubepocket.postgresHost" -}}
+{{- if .Values.postgresql.enabled }}
+{{- printf "%s-postgresql" .Release.Name }}
+{{- else }}
+{{- .Values.externalDatabase.host }}
+{{- end }}
+{{- end }}
+
+{{- define "kubepocket.postgresPort" -}}
+{{- if .Values.postgresql.enabled }}
+{{- "5432" }}
+{{- else }}
+{{- .Values.externalDatabase.port | toString }}
+{{- end }}
+{{- end }}
+
+{{- define "kubepocket.postgresUser" -}}
+{{- if .Values.postgresql.enabled }}
+{{- .Values.postgresql.auth.username }}
+{{- else }}
+{{- .Values.externalDatabase.username }}
+{{- end }}
+{{- end }}
+
+{{- define "kubepocket.postgresPassword" -}}
+{{- if .Values.postgresql.enabled }}
+{{- .Values.postgresql.auth.password }}
+{{- else }}
+{{- .Values.externalDatabase.password }}
+{{- end }}
+{{- end }}
+
+{{- define "kubepocket.postgresDatabase" -}}
+{{- if .Values.postgresql.enabled }}
+{{- .Values.postgresql.auth.database }}
+{{- else }}
+{{- .Values.externalDatabase.database }}
+{{- end }}
+{{- end }}

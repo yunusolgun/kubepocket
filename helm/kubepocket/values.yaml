@@ -1,217 +1,124 @@
 # helm/kubepocket/values.yaml
-# KubePocket v2.0.1 - With anomaly detection and forecasting (stable)
+# KubePocket v3.0.0
 
-# Number of replicas (only 1 supported for HA mode)
 replicaCount: 1
 
-# Docker image configuration
-#image:
-#  repository: kubepocket/kubepocket
-#  tag: 2.0.3
-#  pullPolicy: IfNotPresent
-
 image:
-  repository: kubepocket
-  tag: local
-  pullPolicy: Never
+  repository: kubepocket/kubepocket
+  tag: 3.0.0
+  pullPolicy: IfNotPresent
 
-# Image pull secrets (if using private registry)
 imagePullSecrets: []
-
-# Name override
 nameOverride: ""
 fullnameOverride: ""
 
-# Service account configuration
 serviceAccount:
   create: true
   name: ""
 
-# Collector settings
+clusterName: "default"
+allowedOrigins: "http://localhost:3000"
+logLevel: INFO
+
 collector:
-  # Collection interval in seconds
   interval: 300
-  # Log level: INFO, DEBUG, WARNING, ERROR
   logLevel: INFO
-  # Statistics calculation interval (seconds)
   statsInterval: 3600
 
-# Anomaly detection settings
 anomaly:
   enabled: true
-  # Z-score threshold (higher = less sensitive)
   zScoreThreshold: 3.0
-  # Minimum data points required
   minDataPoints: 10
 
-# Forecasting settings
 forecast:
   enabled: true
-  # Forecast horizon in days
   horizonDays: 7
-  # Minimum confidence threshold (0-1)
   minConfidence: 0.5
 
-# Persistent storage for SQLite database
-persistence:
+# =============================================
+# PostgreSQL (Bitnami subchart)
+# enabled: true  → Helm ile otomatik kur
+# enabled: false → externalDatabase ile harici DB kullan
+# =============================================
+postgresql:
   enabled: true
-  size: 5Gi # Increased for historical data
-  storageClass: ""
-  accessMode: ReadWriteOnce
 
-# Service configuration - 🔥 DÜZELTİLDİ: Port isimleri eklendi
+  image:
+    tag: latest # Sabit — her kurulumda manuel geçmeye gerek yok
+
+  auth:
+    username: kubepocket
+    password: kubepocket
+    database: kubepocket
+
+  primary:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# Harici PostgreSQL (postgresql.enabled=false ise doldur)
+externalDatabase:
+  host: ""
+  port: 5432
+  username: kubepocket
+  password: kubepocket
+  database: kubepocket
+
 service:
   apiPort: 8000
   metricsPort: 8001
   type: ClusterIP
 
-# Resource limits and requests
 resources:
   requests:
-    memory: 512Mi # Increased for ML calculations
+    memory: 512Mi
     cpu: 200m
   limits:
     memory: 1Gi
     cpu: 500m
 
-# Node selector
 nodeSelector: {}
-
-# Tolerations
 tolerations: []
-
-# Affinity
 affinity: {}
-
-# Pod security context
 podSecurityContext: {}
-  # fsGroup: 2000
-
-# Container security context
 securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
 
-# RBAC configuration
 rbac:
   create: true
-  # Additional rules for custom resources
   extraRules: []
 
-# Prometheus ServiceMonitor (for Prometheus Operator)
 serviceMonitor:
   enabled: true
   interval: 30s
   scrapeTimeout: 10s
-  # Additional labels
   labels: {}
-  # Metric relabeling
   metricRelabelings: []
-  # Target labels
-  targetLabels: []
-  # Pod labels
-  podTargetLabels: []
 
-# Grafana dashboard
-grafana:
-  dashboard:
-    enabled: true
-    # ConfigMap name for dashboard
-    configMapName: kubepocket-grafana-dashboard
-    # Dashboard folder in Grafana
-    folder: "Kubernetes"
-    # Dashboard ID (if using Grafana.com)
-    dashboardId: 12345
-
-# Alert rules for Prometheus
-alertRules:
-  enabled: true
-  # Additional alert rules
-  extraRules: []
-
-# PodDisruptionBudget
 podDisruptionBudget:
   enabled: false
   minAvailable: 1
-  # maxUnavailable: 1
 
-# HorizontalPodAutoscaler
 autoscaling:
   enabled: false
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 80
-  targetMemoryUtilizationPercentage: 80
 
-# NetworkPolicy
 networkPolicy:
   enabled: false
-  # Ingress rules
-  ingress: []
-  # Egress rules
-  egress: []
 
-# Pod annotations
 podAnnotations: {}
-
-# Pod labels
 podLabels: {}
-
-# Priority class name
 priorityClassName: ""
-
-# Termination grace period
 terminationGracePeriodSeconds: 30
-
-# Environment variables
 extraEnv: []
-# - name: EXTRA_VAR
-#   value: "value"
-
-# Extra volumes
 extraVolumes: []
-
-# Extra volume mounts
 extraVolumeMounts: []
-
-# Namespace configuration
-namespace:
-  create: false # We use --create-namespace flag
-
-# 🔥 YENİ: Hangi namespace'i izlesin? (boş bırakılırsa tüm namespace'ler)
 watchNamespace: ""
-
-# 🔥 YENİ: Konfigürasyon (settings.yaml içeriği)
-config:
-  anomaly_detection:
-    window_size: 100
-    cpu_threshold: 2.0
-    memory_threshold: 2.0
-
-  monitoring:
-    check_interval: 30
-    namespace: "default"
-
-  alerts:
-    slack:
-      enabled: false
-      webhook: ""
-    email:
-      enabled: false
-      smtp_server: "smtp.gmail.com"
-      smtp_port: 587
-
-# 🔥 YENİ: Log seviyesi
-logLevel: INFO
-
-# Cluster adı — Prometheus metric label'larında görünür.
-# Her müşteri için farklı set edilmeli (örn: prod-eu, staging-us)
-clusterName: "default"
-
-# API'ye erişebilecek frontend URL'leri (virgülle ayrılmış)
-# Örnek: "https://app.kubepocket.com,https://dashboard.mycompany.com"
-allowedOrigins: "http://localhost:3000"

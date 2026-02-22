@@ -15,19 +15,29 @@ spec:
         {{- include "kubepocket.selectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ include "kubepocket.fullname" . }}-collector
-      
+
+      # PostgreSQL hazır olana kadar bekle
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox
+        command:
+        - sh
+        - -c
+        - |
+          until nc -z {{ include "kubepocket.postgresHost" . }} {{ include "kubepocket.postgresPort" . }}; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
-        
-        volumeMounts:
-        - name: data
-          mountPath: /app/data
-        
+
         env:
-        - name: DATABASE_PATH
-          value: /data/kubepocket.db
+        - name: DATABASE_URL
+          value: "postgresql://{{ include "kubepocket.postgresUser" . }}:{{ include "kubepocket.postgresPassword" . }}@{{ include "kubepocket.postgresHost" . }}:{{ include "kubepocket.postgresPort" . }}/{{ include "kubepocket.postgresDatabase" . }}"
         - name: NAMESPACE
           value: {{ .Values.watchNamespace | default .Release.Namespace }}
         - name: LOG_LEVEL
@@ -36,33 +46,27 @@ spec:
           value: {{ .Values.clusterName | default "default" }}
         - name: ALLOWED_ORIGINS
           value: {{ .Values.allowedOrigins | default "http://localhost:3000" }}
-        
+
         ports:
-        - name: api  # 🔥 DÜZELTİLDİ: Port ismi "api" olarak tanımlandı
+        - name: api
           containerPort: 8000
           protocol: TCP
         - name: metrics
           containerPort: 8001
           protocol: TCP
-        
-        # 🔥 DÜZELTİLDİ: Health check'ler port ismi kullanıyor
+
         livenessProbe:
           httpGet:
             path: /health
-            port: api  # Sayısal port yerine isim kullanılıyor
+            port: api
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health
-            port: api  # Sayısal port yerine isim kullanılıyor
+            port: api
           initialDelaySeconds: 5
           periodSeconds: 5
-        
+
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
-      
-      volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: {{ include "kubepocket.fullname" . }}-data

@@ -316,3 +316,56 @@ kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.p
 
 # Sonra statistics daemon'ı manuel çalıştır
 kubectl exec -n kubepocket deploy/kubepocket -- python collector/stats_daemon.py
+
+
+-----------
+
+POSTGRE gecisi sonrası
+
+# PostgreSQL Helm chart'ını indir
+helm repo remove localrepo
+helm dependency update ./helm/kubepocket
+
+# Eski kurulumu sil
+helm uninstall kubepocket -n kubepocket
+
+# Yeni image build et
+eval $(minikube docker-env)
+docker build -t kubepocket:local -f docker/Dockerfile .
+
+# PostgreSQL ile birlikte kur
+helm install kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --create-namespace \
+  --set image.repository=kubepocket \
+  --set image.tag=local \
+  --set image.pullPolicy=Never \
+  --set clusterName=minikube-local \
+  --set allowedOrigins=http://localhost:3000 \
+  --set serviceMonitor.enabled=true \
+  --set postgresql.auth.password=kubepocket123
+
+
+# Minikube docker env aktif et
+eval $(minikube docker-env)
+
+# PostgreSQL image'ını çek
+docker pull bitnami/postgresql:latest
+
+# Sonra pod'u yeniden başlat
+kubectl rollout restart statefulset/kubepocket-postgresql -n kubepocket
+kubectl get pods -n kubepocket -w
+
+helm upgrade kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --set image.repository=kubepocket \
+  --set image.tag=local \
+  --set image.pullPolicy=Never \
+  --set clusterName=minikube-local \
+  --set allowedOrigins=http://localhost:3000 \
+  --set serviceMonitor.enabled=true \
+  --set postgresql.auth.password=kubepocket123 \
+  --set postgresql.image.tag=latest
+
+kubectl delete pod kubepocket-postgresql-0 -n kubepocket
+kubectl get pods -n kubepocket -w
