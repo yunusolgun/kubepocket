@@ -137,6 +137,16 @@ curl -s \
   -H "X-API-Key: <key>" \
   http://localhost:8000/api/metrics/summary | python3 -m json.tool
 
+# Göreceli maliyet
+curl -s \
+  -H "X-API-Key: <key>" \
+  http://localhost:8000/api/cost/relative | python3 -m json.tool
+
+# Waste tespiti
+curl -s \
+  -H "X-API-Key: <key>" \
+  http://localhost:8000/api/cost/waste | python3 -m json.tool
+
 # Swagger UI
 open http://localhost:8000/docs
 ```

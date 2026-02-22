@@ -1,7 +1,4 @@
 # api/main.py
-from api.routes import metrics, alerts, clusters, apikeys
-from api.auth import create_api_key
-from db.models import init_db, SessionLocal
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -9,16 +6,16 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from db.models import init_db, SessionLocal
+from api.auth import create_api_key
 
 app = FastAPI(
     title="KubePocket API",
     description="Kubernetes maliyet ve kaynak monitor API'si",
-    version="1.0.0"
+    version="3.0.0"
 )
 
-# CORS — production URL env var'dan gelir
-ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,21 +28,14 @@ app.add_middleware(
 
 @app.on_event("startup")
 def on_startup():
-    """
-    Uygulama başlarken:
-    1. DB tablolarını oluştur
-    2. Hiç API key yoksa ilk key'i otomatik oluştur ve logla
-    """
     init_db()
 
-    # İlk kurulumda otomatik admin key oluştur
     from db.models import ApiKey
     db = SessionLocal()
     try:
         key_count = db.query(ApiKey).count()
         if key_count == 0:
             raw_key = create_api_key(db, name="initial-admin-key")
-            # Bu key bir daha gösterilmez — loglara yaz
             print("=" * 60)
             print("🔑 İLK API KEY OLUŞTURULDU")
             print(f"   Key: {raw_key}")
@@ -56,19 +46,20 @@ def on_startup():
         db.close()
 
 
-# Router'ları kaydet
+from api.routes import metrics, alerts, clusters, apikeys, cost
 
 app.include_router(metrics.router, prefix="/api/metrics", tags=["metrics"])
 app.include_router(alerts.router, prefix="/api/alerts", tags=["alerts"])
 app.include_router(clusters.router, prefix="/api/clusters", tags=["clusters"])
 app.include_router(apikeys.router, prefix="/api/keys", tags=["api-keys"])
+app.include_router(cost.router, prefix="/api/cost", tags=["cost"])
 
 
 @app.get("/")
 async def root():
     return {
         "service": "KubePocket API",
-        "version": "1.0.0",
+        "version": "3.0.0",
         "status": "running",
         "timestamp": datetime.now().isoformat()
     }
@@ -76,7 +67,6 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Auth gerektirmeyen health check — Kubernetes probe'ları için"""
     return {"status": "healthy"}
 
 
