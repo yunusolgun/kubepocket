@@ -26,12 +26,12 @@ class KubePocketCollector:
     def collect(self):
         db = SessionLocal()
         try:
-            logger.info("📡 Scraping metrics...")
+            logger.info('Scraping metrics...')
             repo = MetricRepository(db)
             metrics = repo.get_latest_per_namespace()
 
             if not metrics:
-                logger.warning("⚠️ No metrics found")
+                logger.warning('No metrics found')
                 yield GaugeMetricFamily('kubepocket_up', 'KubePocket exporter status', value=1)
                 return
 
@@ -89,7 +89,7 @@ class KubePocketCollector:
             pod_waste_score = GaugeMetricFamily(
                 'kubepocket_pod_waste_score',
                 'Pod resource waste score (0-100)',
-                labels=['pod', 'namespace', 'cluster']
+                labels=['pod', 'namespace', 'cluster', 'recommendation']
             )
             pod_waste_cpu = GaugeMetricFamily(
                 'kubepocket_pod_waste_cpu_cores',
@@ -168,8 +168,10 @@ class KubePocketCollector:
             # Waste tespiti
             waste_data = detect_waste(metrics)
             for wp in waste_data.get('waste_pods', []):
+                rec = wp.get('recommendation', 'No recommendation')
+                pod_waste_score.add_metric(
+                    [wp['pod'], wp['namespace'], CLUSTER_NAME, rec], wp['waste_score'])
                 pod_labels = [wp['pod'], wp['namespace'], CLUSTER_NAME]
-                pod_waste_score.add_metric(pod_labels, wp['waste_score'])
                 pod_waste_cpu.add_metric(pod_labels, wp['cpu_request'])
                 pod_waste_memory.add_metric(
                     pod_labels, wp['memory_request_gib'])

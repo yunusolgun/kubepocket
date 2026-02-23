@@ -1,20 +1,20 @@
 # collector/cost.py
 """
-Göreceli maliyet ve waste tespiti.
+Relative cost and waste detection.
 
-Gerçek $ fiyatı yok — cluster içi oransal analiz yapılır:
-- Namespace'in cluster toplamına oranı (%)
-- Pod başına kaynak verimliliği (waste score)
-- Boşa giden kaynak miktarı (idle resource)
+No real $ pricing — uses proportional cluster analysis:
+- Namespace share of cluster total (%)
+- Pod resource efficiency (waste score)
+- Idle resource amount
 """
 from typing import List, Dict, Any
 
 
 def calculate_relative_cost(metrics: list) -> Dict[str, Any]:
     """
-    Her namespace'in cluster toplamına oranını hesapla.
-    
-    metrics: get_latest_per_namespace() sonucu
+    Calculate each namespace's share of cluster total.
+
+    metrics: result of get_latest_per_namespace()
     """
     if not metrics:
         return {}
@@ -26,8 +26,6 @@ def calculate_relative_cost(metrics: list) -> Dict[str, Any]:
     for m in metrics:
         cpu_pct = (m.total_cpu / total_cpu * 100) if total_cpu > 0 else 0
         mem_pct = (m.total_memory / total_memory * 100) if total_memory > 0 else 0
-
-        # Ağırlıklı maliyet oranı — CPU ve memory eşit ağırlık
         cost_pct = (cpu_pct + mem_pct) / 2
 
         namespaces.append({
@@ -36,11 +34,10 @@ def calculate_relative_cost(metrics: list) -> Dict[str, Any]:
             'memory_gib': round(m.total_memory, 3),
             'cpu_pct': round(cpu_pct, 1),
             'memory_pct': round(mem_pct, 1),
-            'cost_pct': round(cost_pct, 1),   # cluster toplam maliyetindeki payı
+            'cost_pct': round(cost_pct, 1),
             'pod_count': len(m.pod_data),
         })
 
-    # Maliyet oranına göre sırala
     namespaces.sort(key=lambda x: x['cost_pct'], reverse=True)
 
     return {
@@ -52,20 +49,18 @@ def calculate_relative_cost(metrics: list) -> Dict[str, Any]:
 
 def detect_waste(metrics: list) -> Dict[str, Any]:
     """
-    Pod bazlı kaynak israfı tespiti.
+    Pod-level resource waste detection.
 
-    Waste kriterleri:
-    1. CPU waste  — request > 0 ama pod çok eski ve hiç restart almamış
-                    → muhtemelen fazla request etmiş
-    2. Memory waste — request > cluster ortalamasının 2 katı
-                      ama pod stabil (restart yok)
-    3. Idle pod  — Pending/Failed durumda kaynak bloke eden pod
-    4. Oversized — Tek pod namespace CPU'sunun %80'inden fazlasını istiyor
+    Waste criteria:
+    1. CPU waste    — high request, old pod, zero restarts
+    2. Memory waste — request > 2.5x cluster average, stable pod
+    3. Idle pod     — Pending/Failed but blocking resources
+    4. Oversized    — single pod consuming >80% of namespace CPU
+    5. Crash loop   — excessive restarts wasting resources
     """
     if not metrics:
         return {'waste_pods': [], 'summary': {}}
 
-    # Cluster genelinde ortalamalar
     all_pods = []
     for m in metrics:
         for pod in m.pod_data:
@@ -93,56 +88,58 @@ def detect_waste(metrics: list) -> Dict[str, Any]:
         ns_total_cpu = pod.get('ns_total_cpu', 0)
 
         waste_reasons = []
-        waste_score = 0  # 0-100
+        waste_score = 0
 
-        # 1. Idle pod — kaynak bloklayan ama çalışmayan pod
+        # 1. Idle pod — blocking resources but not running
         if status in ('Pending', 'Failed') and (cpu > 0 or memory > 0):
             waste_reasons.append({
                 'type': 'idle_pod',
-                'message': f'Pod {status} durumda ama {cpu:.2f} CPU + {memory:.2f}Gi memory bloklıyor',
+                'message': f'Pod is {status} but blocking {cpu:.2f} CPU + {memory:.2f}Gi memory',
                 'severity': 'high'
             })
             waste_score += 60
 
-        # 2. Oversized — namespace CPU'sunun büyük kısmını tek pod yiyor
+        # 2. Oversized — single pod consuming most of namespace CPU
         if ns_total_cpu > 0 and cpu / ns_total_cpu > 0.8 and pod.get('ns_pod_count', 1) > 1:
             pct = cpu / ns_total_cpu * 100
             waste_reasons.append({
                 'type': 'oversized',
-                'message': f'Namespace CPU\'sunun %{pct:.0f}\'ini tek başına istiyor',
+                'message': f'Requesting {pct:.0f}% of namespace CPU alone',
                 'severity': 'high'
             })
             waste_score += 40
 
-        # 3. High memory, stabil pod — muhtemelen fazla request etmiş
+        # 3. High memory, stable pod
         if (memory > avg_memory * 2.5
                 and restarts == 0
                 and age_hours > 24
                 and status == 'Running'):
+            ratio = memory / max(avg_memory, 0.001)
             waste_reasons.append({
                 'type': 'memory_overrequest',
-                'message': f'Cluster ortalamasının {memory/max(avg_memory,0.001):.1f}x memory\'si var, hiç restart almamış',
+                'message': f'{ratio:.1f}x cluster average memory, zero restarts',
                 'severity': 'medium'
             })
             waste_score += 30
 
-        # 4. High CPU request, uzun süredir stabil
+        # 4. High CPU request, long stable run
         if (cpu > avg_cpu * 3
                 and restarts == 0
                 and age_hours > 48
                 and status == 'Running'):
+            ratio = cpu / max(avg_cpu, 0.001)
             waste_reasons.append({
                 'type': 'cpu_overrequest',
-                'message': f'Cluster ortalamasının {cpu/max(avg_cpu,0.001):.1f}x CPU\'su var, {age_hours:.0f} saattir stabil',
+                'message': f'{ratio:.1f}x cluster average CPU, stable for {age_hours:.0f}h',
                 'severity': 'medium'
             })
             waste_score += 25
 
-        # 5. Crash loop — sürekli restart → kaynak israfı
+        # 5. Crash loop — wasting resources with constant restarts
         if restarts >= 10:
             waste_reasons.append({
                 'type': 'crash_loop',
-                'message': f'{restarts} restart — pod sürekli çöküyor, kaynakları boşa harcıyor',
+                'message': f'{restarts} restarts — pod keeps crashing, wasting resources',
                 'severity': 'high'
             })
             waste_score += 50
@@ -158,14 +155,11 @@ def detect_waste(metrics: list) -> Dict[str, Any]:
                 'age_hours': round(age_hours, 1),
                 'waste_score': min(100, waste_score),
                 'reasons': waste_reasons,
-                # Öneri
                 'recommendation': _get_recommendation(waste_reasons, cpu, memory, avg_cpu, avg_memory),
             })
 
-    # Waste score'a göre sırala
     waste_pods.sort(key=lambda x: x['waste_score'], reverse=True)
 
-    # Özet istatistikler
     total_wasted_cpu = sum(
         p['cpu_request'] for p in waste_pods
         if any(r['type'] in ('idle_pod', 'cpu_overrequest', 'oversized') for r in p['reasons'])
@@ -196,15 +190,15 @@ def _get_recommendation(reasons, cpu, memory, avg_cpu, avg_memory) -> str:
     types = [r['type'] for r in reasons]
 
     if 'idle_pod' in types:
-        return 'Pod çalışmıyor, silinmesi veya debug edilmesi önerilir'
+        return 'Pod is not running, consider deleting or debugging it'
     if 'crash_loop' in types:
-        return 'Pod sürekli crash alıyor, uygulama logları incelenmeli'
+        return 'Pod keeps crashing, check application logs'
     if 'oversized' in types:
-        return f'CPU request {cpu:.2f} yerine {cpu*0.5:.2f} core denenebilir'
+        return f'Try reducing CPU request from {cpu:.2f} to {cpu*0.5:.2f} cores'
     if 'memory_overrequest' in types and 'cpu_overrequest' in types:
-        return f'CPU\'yu {avg_cpu*1.5:.2f} core, memory\'yi {avg_memory*1.5:.2f}Gi\'a düşürmeyi dene'
+        return f'Try reducing CPU to {avg_cpu*1.5:.2f} cores and memory to {avg_memory*1.5:.2f}Gi'
     if 'memory_overrequest' in types:
-        return f'Memory request {memory:.2f}Gi yerine {avg_memory*1.5:.2f}Gi denenebilir'
+        return f'Try reducing memory request from {memory:.2f}Gi to {avg_memory*1.5:.2f}Gi'
     if 'cpu_overrequest' in types:
-        return f'CPU request {cpu:.2f} yerine {avg_cpu*1.5:.2f} core denenebilir'
-    return 'Kaynak kullanımını izlemeye devam et'
+        return f'Try reducing CPU request from {cpu:.2f} to {avg_cpu*1.5:.2f} cores'
+    return 'Continue monitoring resource usage'
