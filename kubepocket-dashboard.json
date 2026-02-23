@@ -3,10 +3,8 @@
     {
       "name": "DS_PROMETHEUS",
       "label": "Prometheus",
-      "description": "",
       "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
+      "pluginId": "prometheus"
     }
   ],
   "__requires": [
@@ -20,7 +18,7 @@
   "title": "KubePocket",
   "uid": "kubepocket-main",
   "schemaVersion": 36,
-  "version": 6,
+  "version": 7,
   "refresh": "30s",
   "templating": {
     "list": [
@@ -42,8 +40,7 @@
         "label": "Top N Pod",
         "type": "custom",
         "query": "5,10,20,50",
-        "current": { "selected": true, "text": "10", "value": "10" },
-        "includeAll": false
+        "current": { "selected": true, "text": "10", "value": "10" }
       }
     ]
   },
@@ -53,14 +50,11 @@
       "title": "🌐 NAMESPACE BAZLI",
       "type": "text",
       "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
-      "options": {
-        "content": "## Namespace Bazlı Metrikler — Filtre: **$namespace**",
-        "mode": "markdown"
-      }
+      "options": { "content": "## Namespace Metrics", "mode": "markdown" }
     },
     {
       "id": 1,
-      "title": "Namespace CPU Usage (cores)",
+      "title": "Namespace CPU (cores)",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 2 },
@@ -77,7 +71,7 @@
     },
     {
       "id": 2,
-      "title": "Namespace Memory Usage (GiB)",
+      "title": "Namespace Memory (GiB)",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 2 },
@@ -114,7 +108,7 @@
     },
     {
       "id": 4,
-      "title": "Namespace Anomaly Score (0-100)",
+      "title": "Namespace Anomaly Score",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
@@ -141,13 +135,366 @@
         }
       }
     },
+
     {
-      "id": 200,
-      "title": "🚨 POD ANOMALY — EN KRİTİK PODLAR",
+      "id": 500,
+      "title": "💰 RELATIVE COST",
       "type": "text",
       "gridPos": { "h": 2, "w": 24, "x": 0, "y": 18 },
       "options": {
-        "content": "## En Kritik Pod'lar — Top $topk (Anomaly Skoruna Göre)",
+        "content": "## Relative Cost — Namespace Share of Cluster Resources",
+        "mode": "markdown"
+      }
+    },
+    {
+      "id": 501,
+      "title": "Namespace Cost Share (%)",
+      "type": "piechart",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 10, "w": 8, "x": 0, "y": 20 },
+      "targets": [
+        {
+          "expr": "kubepocket_namespace_cost_pct{exported_namespace=~\"$namespace\"}",
+          "legendFormat": "{{exported_namespace}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": ["value"]
+        }
+      }
+    },
+    {
+      "id": 502,
+      "title": "CPU Share (%) — Namespace Comparison",
+      "type": "bargauge",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 10, "w": 8, "x": 8, "y": 20 },
+      "targets": [
+        {
+          "expr": "kubepocket_namespace_cpu_pct{exported_namespace=~\"$namespace\"}",
+          "legendFormat": "{{exported_namespace}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 40 },
+              { "color": "red", "value": 70 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 503,
+      "title": "Memory Share (%) — Namespace Comparison",
+      "type": "bargauge",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 10, "w": 8, "x": 16, "y": 20 },
+      "targets": [
+        {
+          "expr": "kubepocket_namespace_memory_pct{exported_namespace=~\"$namespace\"}",
+          "legendFormat": "{{exported_namespace}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 40 },
+              { "color": "red", "value": 70 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 504,
+      "title": "Namespace Cost Share — Time Series",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 30 },
+      "targets": [
+        {
+          "expr": "kubepocket_namespace_cost_pct{exported_namespace=~\"$namespace\"}",
+          "legendFormat": "{{exported_namespace}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+
+    {
+      "id": 600,
+      "title": "🗑️ WASTE DETECTION",
+      "type": "text",
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 38 },
+      "options": {
+        "content": "## Resource Waste — Which Pods Are Wasting Resources?",
+        "mode": "markdown"
+      }
+    },
+    {
+      "id": 601,
+      "title": "Cluster Waste Summary (%)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 40 },
+      "targets": [
+        {
+          "expr": "kubepocket_cluster_waste_pct",
+          "legendFormat": "{{resource}} waste",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 20 },
+              { "color": "red", "value": 40 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 602,
+      "title": "Waste Pod Count",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 40 },
+      "targets": [
+        {
+          "expr": "count(kubepocket_pod_waste_score > 0)",
+          "legendFormat": "Waste Pods",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 3 },
+              { "color": "red", "value": 10 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background"
+      }
+    },
+    {
+      "id": 603,
+      "title": "Total Wasted CPU (cores)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 40 },
+      "targets": [
+        {
+          "expr": "sum(kubepocket_pod_waste_cpu_cores)",
+          "legendFormat": "Wasted CPU",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 4 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background"
+      }
+    },
+    {
+      "id": 604,
+      "title": "Top $topk — Pod Waste Score",
+      "type": "bargauge",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 12, "w": 12, "x": 0, "y": 46 },
+      "targets": [
+        {
+          "expr": "topk($topk, kubepocket_pod_waste_score{exported_namespace=~\"$namespace\"})",
+          "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 30 },
+              { "color": "red", "value": 60 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 605,
+      "title": "Top $topk — Wasted CPU (cores)",
+      "type": "bargauge",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 12, "w": 6, "x": 12, "y": 46 },
+      "targets": [
+        {
+          "expr": "topk($topk, kubepocket_pod_waste_cpu_cores{exported_namespace=~\"$namespace\"})",
+          "legendFormat": "{{exported_pod}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 606,
+      "title": "Top $topk — Wasted Memory (GiB)",
+      "type": "bargauge",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 12, "w": 6, "x": 18, "y": 46 },
+      "targets": [
+        {
+          "expr": "topk($topk, kubepocket_pod_waste_memory_gib{exported_namespace=~\"$namespace\"})",
+          "legendFormat": "{{exported_pod}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decgbytes",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 607,
+      "title": "Pod Waste Score — Time Series",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 58 },
+      "targets": [
+        {
+          "expr": "topk($topk, kubepocket_pod_waste_score{exported_namespace=~\"$namespace\"})",
+          "legendFormat": "{{exported_pod}} ({{exported_namespace}})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+
+    {
+      "id": 200,
+      "title": "🚨 POD ANOMALY",
+      "type": "text",
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 66 },
+      "options": {
+        "content": "## Pod Anomaly — Which Pod Is Causing Issues?",
         "mode": "markdown"
       }
     },
@@ -156,7 +503,7 @@
       "title": "Top $topk — Pod Anomaly Score",
       "type": "bargauge",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 12, "w": 8, "x": 0, "y": 20 },
+      "gridPos": { "h": 10, "w": 8, "x": 0, "y": 68 },
       "targets": [
         {
           "expr": "topk($topk, kubepocket_pod_anomaly_score{exported_namespace=~\"$namespace\"})",
@@ -192,7 +539,7 @@
       "title": "Top $topk — Restart Anomaly",
       "type": "bargauge",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 12, "w": 8, "x": 8, "y": 20 },
+      "gridPos": { "h": 10, "w": 8, "x": 8, "y": 68 },
       "targets": [
         {
           "expr": "topk($topk, kubepocket_pod_restart_anomaly{exported_namespace=~\"$namespace\"})",
@@ -228,7 +575,7 @@
       "title": "Top $topk — CPU Anomaly",
       "type": "bargauge",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 12, "w": 8, "x": 16, "y": 20 },
+      "gridPos": { "h": 10, "w": 8, "x": 16, "y": 68 },
       "targets": [
         {
           "expr": "topk($topk, kubepocket_pod_cpu_anomaly{exported_namespace=~\"$namespace\"})",
@@ -259,44 +606,20 @@
         "showUnfilled": true
       }
     },
-    {
-      "id": 33,
-      "title": "Top $topk Pod Anomaly — Zaman Serisi",
-      "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 32 },
-      "targets": [
-        {
-          "expr": "topk($topk, kubepocket_pod_anomaly_score{exported_namespace=~\"$namespace\"})",
-          "legendFormat": "{{exported_pod}} ({{exported_namespace}})",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "min": 0,
-          "max": 100,
-          "color": { "mode": "palette-classic" }
-        }
-      }
-    },
+
     {
       "id": 300,
-      "title": "🐳 POD DETAY",
+      "title": "🐳 POD DETAIL",
       "type": "text",
-      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 40 },
-      "options": {
-        "content": "## Pod Detay — Top $topk (CPU + Memory)",
-        "mode": "markdown"
-      }
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 78 },
+      "options": { "content": "## Pod Detail", "mode": "markdown" }
     },
     {
       "id": 10,
-      "title": "Top $topk — Pod CPU Request",
+      "title": "Top $topk — Pod CPU",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 42 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 80 },
       "targets": [
         {
           "expr": "topk($topk, kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"})",
@@ -310,10 +633,10 @@
     },
     {
       "id": 11,
-      "title": "Top $topk — Pod Memory Request",
+      "title": "Top $topk — Pod Memory",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 42 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 80 },
       "targets": [
         {
           "expr": "topk($topk, kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\"})",
@@ -330,10 +653,10 @@
     },
     {
       "id": 12,
-      "title": "Top $topk — Pod Restart Count",
+      "title": "Top $topk — Restart Count",
       "type": "bargauge",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 50 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 88 },
       "targets": [
         {
           "expr": "topk($topk, kubepocket_pod_restarts_total{exported_namespace=~\"$namespace\"})",
@@ -366,7 +689,7 @@
       "title": "Pod Status",
       "type": "stat",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 50 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 88 },
       "targets": [
         {
           "expr": "kubepocket_pod_running{exported_namespace=~\"$namespace\"}",
@@ -401,19 +724,20 @@
         "colorMode": "background"
       }
     },
+
     {
       "id": 400,
-      "title": "📊 ÖZET",
+      "title": "📊 SUMMARY",
       "type": "text",
-      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 58 },
-      "options": { "content": "## Özet", "mode": "markdown" }
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 96 },
+      "options": { "content": "## Summary", "mode": "markdown" }
     },
     {
       "id": 20,
       "title": "Total CPU by Namespace",
       "type": "bargauge",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 60 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 98 },
       "targets": [
         {
           "expr": "kubepocket_namespace_cpu_cores{exported_namespace=~\"$namespace\"}",
@@ -435,7 +759,7 @@
       "title": "Total Memory by Namespace",
       "type": "bargauge",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 60 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 98 },
       "targets": [
         {
           "expr": "kubepocket_namespace_memory_gib{exported_namespace=~\"$namespace\"}",
@@ -460,7 +784,7 @@
       "title": "KubePocket Exporter Status",
       "type": "stat",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 68 },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 106 },
       "targets": [
         {
           "expr": "max(kubepocket_up)",
