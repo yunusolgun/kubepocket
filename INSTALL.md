@@ -66,6 +66,8 @@ kubectl get pods -n monitoring -w
 
 ### 5 — KubePocket kur
 
+⚠️ Prometheus kurulmadan önce yapılırsa ServiceMonitor CRD hatası alırsın. Adım 4 tamamlanmadan bu adıma geçme.
+
 ```bash
 helm install kubepocket ./helm/kubepocket \
   --namespace kubepocket \

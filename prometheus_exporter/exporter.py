@@ -62,7 +62,7 @@ class KubePocketCollector:
             pod_age = GaugeMetricFamily('kubepocket_pod_age_hours', 'Pod age in hours', labels=[
                                         'pod', 'namespace', 'cluster'])
             pod_anomaly = GaugeMetricFamily(
-                'kubepocket_pod_anomaly_score', 'Pod anomaly score (0-100)', labels=['pod', 'namespace', 'cluster'])
+                'kubepocket_pod_anomaly_score', 'Pod anomaly score (0-100)', labels=['pod', 'namespace', 'cluster', 'recommendation'])
             pod_restart_score = GaugeMetricFamily(
                 'kubepocket_pod_restart_anomaly', 'Pod restart anomaly (0-100)', labels=['pod', 'namespace', 'cluster'])
             pod_cpu_score = GaugeMetricFamily(
@@ -106,6 +106,20 @@ class KubePocketCollector:
                 'Cluster-wide waste percentage (%)',
                 labels=['cluster', 'resource']
             )
+
+            # waste_rec_map önceden hesapla — anomaly döngüsünde kullanılır
+            _waste_data_pre = detect_waste(metrics)
+            waste_rec_map = {
+                (wp['pod'], wp['namespace']): wp.get('recommendation', '')
+                for wp in _waste_data_pre.get('waste_pods', [])
+            }
+
+            # waste_rec_map önceden hesapla — anomaly döngüsünde kullanılır
+            _waste_data_pre = detect_waste(metrics)
+            waste_rec_map = {
+                (wp['pod'], wp['namespace']): wp.get('recommendation', '')
+                for wp in _waste_data_pre.get('waste_pods', [])
+            }
 
             # Namespace metrikleri
             for m in metrics:
@@ -152,7 +166,22 @@ class KubePocketCollector:
                     restart_anom = min(100.0, restarts * 10.0)
                     total_anom = (cpu_anom * 0.4) + (restart_anom * 0.6)
 
-                    pod_anomaly.add_metric(pod_labels, round(total_anom, 2))
+                    # Anomaly recommendation — davranış bazlı, waste'den bağımsız
+                    if restart_anom >= 60:
+                        anomaly_rec = f'Critical: {restarts} restarts — pod is unstable, check logs immediately'
+                    elif restart_anom >= 30:
+                        anomaly_rec = f'{restarts} restarts detected — investigate application crashes'
+                    elif restart_anom > 0 and cpu_anom == 0:
+                        anomaly_rec = f'{restarts} restarts — likely memory or liveness probe issue'
+                    elif cpu_anom >= 60:
+                        anomaly_rec = f'CPU is {cpu_ratio:.1f}x namespace average — possible runaway process or missing limit'
+                    elif cpu_anom >= 30:
+                        anomaly_rec = f'CPU {cpu_ratio:.1f}x above average — monitor for sustained spike'
+                    elif cpu_anom > 0 and restart_anom > 0:
+                        anomaly_rec = f'Both CPU spike and {restarts} restarts — likely thrashing under load'
+                    else:
+                        anomaly_rec = f'Anomaly score {round(total_anom, 1)} — monitor closely'
+                    pod_anomaly.add_metric([pod_name, pod_ns, CLUSTER_NAME, anomaly_rec], round(total_anom, 2))
                     pod_cpu_score.add_metric(pod_labels, round(cpu_anom, 2))
                     pod_restart_score.add_metric(
                         pod_labels, round(restart_anom, 2))

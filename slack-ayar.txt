@@ -1,0 +1,56 @@
+Grafana'da template ve contact point ayarlarını yapalım.
+
+1 — Notification Template
+Grafana → Alerting → Contact Points → Notification Templates → Add notification template group
+Name: kubepocket
+Content:
+{{ define "kubepocket.title" }}{{ range .Alerts }}[{{ .Status | toUpper }}] {{ .Labels.alertname }} — {{ .Labels.exported_pod }}{{ end }}{{ end }}
+
+{{ define "kubepocket.message" }}{{ range .Alerts }}
+*Pod:* `{{ .Labels.exported_pod }}`
+*Namespace:* `{{ .Labels.exported_namespace }}`
+*Score:* {{ printf "%.0f" .Values.A }}
+*Severity:* {{ if gt .Values.A 75.0 }}⚠️ Critical{{ else }}🔶 Warning{{ end }}
+*Recommendation:* {{ .Labels.recommendation }}
+---
+{{ end }}{{ end }}
+Save
+
+2 — Contact Point Güncelle
+Grafana → Alerting → Contact Points → Add contact point
+Name: kubepocket-slack
+Type: Slack
+Webhook URL: <önceki webhook URL'in>
+Optional Slack settings:
+Title:     {{ template "kubepocket.title" . }}
+Text body: {{ template "kubepocket.message" . }}
+Test → Save
+
+Webhook URL'ini hatırlıyor musun? Hatırlamıyorsan https://api.slack.com/apps → uygulamana gir → Incoming Webhooks → mevcut webhook'u kopyala.
+
+
+3 — Alert Rules Ekle (Daha önce eklemediysen)
+Grafana → Alerting → Alert Rules → New alert rule
+Rule 1:
+Name: High Waste Pod
+Query A: kubepocket_pod_waste_score > 50
+Condition: IS ABOVE 0
+Evaluate every: 1m / For: 5m
+Rule 2:
+Name: Critical Waste Pod
+Query A: kubepocket_pod_waste_score > 75
+Condition: IS ABOVE 0
+Evaluate every: 1m / For: 2m
+Rule 3:
+Name: High Anomaly
+Query A: kubepocket_pod_anomaly_score > 60
+Condition: IS ABOVE 0
+Evaluate every: 1m / For: 5m
+
+4 — Notification Policy
+Grafana → Alerting → Notification Policies → Edit default policy
+Contact point: kubepocket-slack
+Group by: exported_namespace, exported_pod
+Repeat interval: 4h
+Save
+
