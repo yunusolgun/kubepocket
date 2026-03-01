@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 # prometheus_exporter/exporter.py
+from sqlalchemy import func
 from prometheus_client import REGISTRY
 from prometheus_client.core import GaugeMetricFamily
 from collector.cost import calculate_relative_cost, detect_waste
 from db.repository import MetricRepository
-from db.models import Statistics, SessionLocal
+from db.models import Statistics, KubeEvent, SessionLocal
 import sys
 import os
 import logging
+from datetime import datetime, timedelta
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 CLUSTER_NAME = os.getenv('CLUSTER_NAME', 'default')
@@ -35,93 +35,57 @@ class KubePocketCollector:
                 yield GaugeMetricFamily('kubepocket_up', 'KubePocket exporter status', value=1)
                 return
 
-            logger.info(
-                f"✅ {len(metrics)} namespace — cluster: {CLUSTER_NAME}")
+            logger.info(f"{len(metrics)} namespaces — cluster: {CLUSTER_NAME}")
 
-            # --- Namespace bazlı ---
             ns_cpu = GaugeMetricFamily('kubepocket_namespace_cpu_cores',
-                                       'Total CPU request per namespace', labels=['namespace', 'cluster'])
-            ns_memory = GaugeMetricFamily(
-                'kubepocket_namespace_memory_gib', 'Total memory request per namespace', labels=['namespace', 'cluster'])
+                                       'Total CPU request per namespace',    labels=['namespace', 'cluster'])
+            ns_memory = GaugeMetricFamily('kubepocket_namespace_memory_gib',
+                                          'Total memory request per namespace', labels=['namespace', 'cluster'])
             ns_restarts = GaugeMetricFamily('kubepocket_namespace_restarts_total',
-                                            'Total pod restarts per namespace', labels=['namespace', 'cluster'])
-            ns_anomaly = GaugeMetricFamily(
-                'kubepocket_anomaly_score', 'Namespace anomaly score (0-100)', labels=['namespace', 'metric_type', 'cluster'])
+                                            'Total pod restarts per namespace',   labels=['namespace', 'cluster'])
+            ns_anomaly = GaugeMetricFamily('kubepocket_anomaly_score',
+                                           'Namespace anomaly score (0-100)',    labels=['namespace', 'metric_type', 'cluster'])
             ns_forecast = GaugeMetricFamily(
-                'kubepocket_forecast_cpu_7d', 'CPU forecast 7 days', labels=['namespace', 'cluster'])
-
-            # --- Pod bazlı ---
-            pod_cpu = GaugeMetricFamily('kubepocket_pod_cpu_cores', 'CPU request per pod', labels=[
-                                        'pod', 'namespace', 'cluster'])
-            pod_memory = GaugeMetricFamily('kubepocket_pod_memory_gib', 'Memory request per pod', labels=[
+                'kubepocket_forecast_cpu_7d',          'CPU forecast 7 days',               labels=['namespace', 'cluster'])
+            pod_cpu = GaugeMetricFamily('kubepocket_pod_cpu_cores',        'CPU request per pod',
+                                        labels=['pod', 'namespace', 'cluster'])
+            pod_memory = GaugeMetricFamily('kubepocket_pod_memory_gib',       'Memory request per pod',                    labels=[
                                            'pod', 'namespace', 'cluster'])
-            pod_restarts = GaugeMetricFamily('kubepocket_pod_restarts_total', 'Restart count per pod', labels=[
+            pod_restarts = GaugeMetricFamily('kubepocket_pod_restarts_total',   'Restart count per pod',                     labels=[
                                              'pod', 'namespace', 'cluster'])
-            pod_status = GaugeMetricFamily('kubepocket_pod_running', 'Pod running status (1=Running, 0=other)', labels=[
+            pod_status = GaugeMetricFamily('kubepocket_pod_running',          'Pod running status (1=Running, 0=other)',    labels=[
                                            'pod', 'namespace', 'status', 'cluster'])
-            pod_age = GaugeMetricFamily('kubepocket_pod_age_hours', 'Pod age in hours', labels=[
-                                        'pod', 'namespace', 'cluster'])
-            pod_anomaly = GaugeMetricFamily(
-                'kubepocket_pod_anomaly_score', 'Pod anomaly score (0-100)', labels=['pod', 'namespace', 'cluster', 'recommendation'])
+            pod_age = GaugeMetricFamily('kubepocket_pod_age_hours',        'Pod age in hours',
+                                        labels=['pod', 'namespace', 'cluster'])
+            pod_anomaly = GaugeMetricFamily('kubepocket_pod_anomaly_score',    'Pod anomaly score (0-100)',
+                                            labels=['pod', 'namespace', 'cluster', 'recommendation'])
             pod_restart_score = GaugeMetricFamily(
-                'kubepocket_pod_restart_anomaly', 'Pod restart anomaly (0-100)', labels=['pod', 'namespace', 'cluster'])
+                'kubepocket_pod_restart_anomaly',  'Pod restart anomaly (0-100)',               labels=['pod', 'namespace', 'cluster'])
             pod_cpu_score = GaugeMetricFamily(
-                'kubepocket_pod_cpu_anomaly', 'Pod CPU anomaly (0-100)', labels=['pod', 'namespace', 'cluster'])
-
-            # --- Göreceli maliyet ---
+                'kubepocket_pod_cpu_anomaly',      'Pod CPU anomaly (0-100)',                   labels=['pod', 'namespace', 'cluster'])
             ns_cost_pct = GaugeMetricFamily(
-                'kubepocket_namespace_cost_pct',
-                'Namespace cost share in cluster (%)',
-                labels=['namespace', 'cluster']
-            )
+                'kubepocket_namespace_cost_pct',   'Namespace cost share in cluster (%)',       labels=['namespace', 'cluster'])
             ns_cpu_pct = GaugeMetricFamily(
-                'kubepocket_namespace_cpu_pct',
-                'Namespace CPU share (%)',
-                labels=['namespace', 'cluster']
-            )
+                'kubepocket_namespace_cpu_pct',    'Namespace CPU share (%)',                   labels=['namespace', 'cluster'])
             ns_memory_pct = GaugeMetricFamily(
-                'kubepocket_namespace_memory_pct',
-                'Namespace memory share (%)',
-                labels=['namespace', 'cluster']
-            )
-
-            # --- Waste tespiti ---
-            pod_waste_score = GaugeMetricFamily(
-                'kubepocket_pod_waste_score',
-                'Pod resource waste score (0-100)',
-                labels=['pod', 'namespace', 'cluster', 'recommendation']
-            )
+                'kubepocket_namespace_memory_pct', 'Namespace memory share (%)',                labels=['namespace', 'cluster'])
+            pod_waste_score = GaugeMetricFamily('kubepocket_pod_waste_score',      'Pod resource waste score (0-100)',
+                                                labels=['pod', 'namespace', 'cluster', 'recommendation'])
             pod_waste_cpu = GaugeMetricFamily(
-                'kubepocket_pod_waste_cpu_cores',
-                'Wasted CPU amount (cores)',
-                labels=['pod', 'namespace', 'cluster']
-            )
+                'kubepocket_pod_waste_cpu_cores',  'Wasted CPU amount (cores)',                 labels=['pod', 'namespace', 'cluster'])
             pod_waste_memory = GaugeMetricFamily(
-                'kubepocket_pod_waste_memory_gib',
-                'Wasted memory amount (GiB)',
-                labels=['pod', 'namespace', 'cluster']
-            )
+                'kubepocket_pod_waste_memory_gib', 'Wasted memory amount (GiB)',               labels=['pod', 'namespace', 'cluster'])
             cluster_waste_pct = GaugeMetricFamily(
-                'kubepocket_cluster_waste_pct',
-                'Cluster-wide waste percentage (%)',
-                labels=['cluster', 'resource']
-            )
+                'kubepocket_cluster_waste_pct',    'Cluster-wide waste percentage (%)',        labels=['cluster', 'resource'])
+            pod_event_count = GaugeMetricFamily('kubepocket_pod_event_count',      'Kubernetes event count per pod (last 24h)', labels=[
+                                                'pod', 'namespace', 'event_type', 'cluster'])
 
-            # waste_rec_map önceden hesapla — anomaly döngüsünde kullanılır
-            _waste_data_pre = detect_waste(metrics)
+            _waste_pre = detect_waste(metrics)
             waste_rec_map = {
                 (wp['pod'], wp['namespace']): wp.get('recommendation', '')
-                for wp in _waste_data_pre.get('waste_pods', [])
+                for wp in _waste_pre.get('waste_pods', [])
             }
 
-            # waste_rec_map önceden hesapla — anomaly döngüsünde kullanılır
-            _waste_data_pre = detect_waste(metrics)
-            waste_rec_map = {
-                (wp['pod'], wp['namespace']): wp.get('recommendation', '')
-                for wp in _waste_data_pre.get('waste_pods', [])
-            }
-
-            # Namespace metrikleri
             for m in metrics:
                 ns_labels = [m.namespace, CLUSTER_NAME]
                 ns_cpu.add_metric(ns_labels, m.total_cpu)
@@ -148,7 +112,6 @@ class KubePocketCollector:
                     pod_name = pod.get('name', '')
                     pod_ns = pod.get('namespace', m.namespace)
                     pod_labels = [pod_name, pod_ns, CLUSTER_NAME]
-
                     cpu_req = pod.get('cpu_request', 0)
                     restarts = pod.get('restart_count', 0)
                     status = pod.get('status', 'Unknown')
@@ -166,7 +129,6 @@ class KubePocketCollector:
                     restart_anom = min(100.0, restarts * 10.0)
                     total_anom = (cpu_anom * 0.4) + (restart_anom * 0.6)
 
-                    # Anomaly recommendation — davranış bazlı, waste'den bağımsız
                     if restart_anom >= 60:
                         anomaly_rec = f'Critical: {restarts} restarts — pod is unstable, check logs immediately'
                     elif restart_anom >= 30:
@@ -181,12 +143,13 @@ class KubePocketCollector:
                         anomaly_rec = f'Both CPU spike and {restarts} restarts — likely thrashing under load'
                     else:
                         anomaly_rec = f'Anomaly score {round(total_anom, 1)} — monitor closely'
-                    pod_anomaly.add_metric([pod_name, pod_ns, CLUSTER_NAME, anomaly_rec], round(total_anom, 2))
+
+                    pod_anomaly.add_metric(
+                        [pod_name, pod_ns, CLUSTER_NAME, anomaly_rec], round(total_anom, 2))
                     pod_cpu_score.add_metric(pod_labels, round(cpu_anom, 2))
                     pod_restart_score.add_metric(
                         pod_labels, round(restart_anom, 2))
 
-            # Göreceli maliyet hesapla
             cost_data = calculate_relative_cost(metrics)
             for ns_data in cost_data.get('namespaces', []):
                 ns_labels = [ns_data['namespace'], CLUSTER_NAME]
@@ -194,7 +157,6 @@ class KubePocketCollector:
                 ns_cpu_pct.add_metric(ns_labels, ns_data['cpu_pct'])
                 ns_memory_pct.add_metric(ns_labels, ns_data['memory_pct'])
 
-            # Waste tespiti
             waste_data = detect_waste(metrics)
             for wp in waste_data.get('waste_pods', []):
                 rec = wp.get('recommendation', 'No recommendation')
@@ -208,9 +170,23 @@ class KubePocketCollector:
             summary = waste_data.get('summary', {})
             if summary:
                 cluster_waste_pct.add_metric(
-                    [CLUSTER_NAME, 'cpu'], summary.get('wasted_cpu_pct', 0))
+                    [CLUSTER_NAME, 'cpu'],    summary.get('wasted_cpu_pct', 0))
                 cluster_waste_pct.add_metric(
                     [CLUSTER_NAME, 'memory'], summary.get('wasted_memory_pct', 0))
+
+            since = datetime.utcnow() - timedelta(hours=24)
+            kube_events = (
+                db.query(KubeEvent.pod_name, KubeEvent.namespace, KubeEvent.event_type,
+                         func.sum(KubeEvent.count).label('total'))
+                .filter(KubeEvent.created_at >= since)
+                .group_by(KubeEvent.pod_name, KubeEvent.namespace, KubeEvent.event_type)
+                .all()
+            )
+            for ev in kube_events:
+                pod_event_count.add_metric(
+                    [ev.pod_name, ev.namespace, ev.event_type, CLUSTER_NAME],
+                    float(ev.total or 0)
+                )
 
             yield ns_cpu
             yield ns_memory
@@ -232,10 +208,11 @@ class KubePocketCollector:
             yield pod_waste_cpu
             yield pod_waste_memory
             yield cluster_waste_pct
+            yield pod_event_count
             yield GaugeMetricFamily('kubepocket_up', 'KubePocket exporter status', value=1)
 
         except Exception as e:
-            logger.error(f"❌ Collect error: {e}", exc_info=True)
+            logger.error(f"Collect error: {e}", exc_info=True)
             yield GaugeMetricFamily('kubepocket_up', 'KubePocket exporter status', value=0)
         finally:
             db.close()
@@ -248,10 +225,8 @@ def start_exporter(port: int = 8001):
     REGISTRY.register(KubePocketCollector())
     app = make_wsgi_app()
     httpd = make_server('0.0.0.0', port, app)
-
-    logger.info(f"🚀 Prometheus exporter listening on :{port}/metrics")
-    logger.info(f"🏷️  Cluster label: {CLUSTER_NAME}")
-
+    logger.info(
+        f"Prometheus exporter listening on :{port}/metrics — cluster: {CLUSTER_NAME}")
     httpd.serve_forever()
 
 

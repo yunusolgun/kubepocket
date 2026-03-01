@@ -30,7 +30,8 @@ class Cluster(Base):
     name = Column(String(255), unique=True, nullable=False)
     context = Column(String(255))
     created_at = Column(DateTime, default=datetime.utcnow)
-    last_seen = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_seen = Column(DateTime, default=datetime.utcnow,
+                       onupdate=datetime.utcnow)
 
 
 class Metric(Base):
@@ -71,6 +72,23 @@ class Statistics(Base):
     max_value = Column(Float)
     trend_slope = Column(Float, default=0.0)
     calculated_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class KubeEvent(Base):
+    __tablename__ = 'kube_events'
+
+    id = Column(Integer, primary_key=True)
+    cluster_id = Column(Integer, nullable=True)
+    namespace = Column(String(255), nullable=False, index=True)
+    pod_name = Column(String(255), nullable=False, index=True)
+    # OOMKilled, BackOff, Evicted, etc.
+    event_type = Column(String(100), nullable=False, index=True)
+    reason = Column(String(255))          # Kubernetes reason field
+    message = Column(Text)                # Kubernetes message field
+    count = Column(Integer, default=1)    # Kaç kez tekrarlandı
+    first_seen = Column(DateTime, nullable=True)
+    last_seen = Column(DateTime, nullable=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
 
 class ApiKey(Base):

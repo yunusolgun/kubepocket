@@ -11,8 +11,8 @@ from api.auth import create_api_key
 
 app = FastAPI(
     title="KubePocket API",
-    description="Kubernetes maliyet ve kaynak monitor API'si",
-    version="3.0.0"
+    description="Kubernetes resource monitoring API",
+    version="4.0.0"
 )
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
@@ -37,29 +37,29 @@ def on_startup():
         if key_count == 0:
             raw_key = create_api_key(db, name="initial-admin-key")
             print("=" * 60)
-            print("🔑 İLK API KEY OLUŞTURULDU")
+            print("API KEY CREATED")
             print(f"   Key: {raw_key}")
-            print("   Bu key bir daha gösterilmeyecek!")
-            print("   Hemen kopyala ve güvenli bir yerde sakla.")
+            print("   Copy this key now — it won't be shown again.")
             print("=" * 60)
     finally:
         db.close()
 
 
-from api.routes import metrics, alerts, clusters, apikeys, cost
+from api.routes import metrics, alerts, clusters, apikeys, cost, events
 
 app.include_router(metrics.router, prefix="/api/metrics", tags=["metrics"])
-app.include_router(alerts.router, prefix="/api/alerts", tags=["alerts"])
-app.include_router(clusters.router, prefix="/api/clusters", tags=["clusters"])
-app.include_router(apikeys.router, prefix="/api/keys", tags=["api-keys"])
-app.include_router(cost.router, prefix="/api/cost", tags=["cost"])
+app.include_router(alerts.router,  prefix="/api/alerts",  tags=["alerts"])
+app.include_router(clusters.router,prefix="/api/clusters",tags=["clusters"])
+app.include_router(apikeys.router, prefix="/api/keys",    tags=["api-keys"])
+app.include_router(cost.router,    prefix="/api/cost",    tags=["cost"])
+app.include_router(events.router,  prefix="/api/events",  tags=["events"])
 
 
 @app.get("/")
 async def root():
     return {
         "service": "KubePocket API",
-        "version": "3.0.0",
+        "version": "4.0.0",
         "status": "running",
         "timestamp": datetime.now().isoformat()
     }
