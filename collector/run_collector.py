@@ -37,7 +37,7 @@ def collect_once(context=None):
             CLUSTER_NAME, context or 'in-cluster')
 
         print("\nCollecting metrics...")
-        metrics = k8s.collect_all_metrics()
+        metrics = k8s.collect_all_metrics_with_usage()
 
         if not metrics:
             print("No metrics collected!")

@@ -299,3 +299,58 @@ kubectl get servicemonitor kubepocket -n kubepocket -o yaml | grep "release:"
 ```bash
 kubectl exec -n kubepocket deploy/kubepocket -- cat /var/log/kubepocket/collector.log
 ```
+
+# --------------------------------------------------
+
+# kubepocket kurulum. - ozet
+
+### 1 — Minikube başlat
+
+```bash
+minikube start --cpus=2 --memory=4096 --driver=docker
+```
+
+# 1. Metrics Server etkinleştir
+
+minikube addons enable metrics-server
+
+# 2. Docker env ayarla
+
+eval $(minikube docker-env)
+
+# 3. Image build et
+
+docker build -t kubepocket:local -f docker/Dockerfile .
+
+# 4. Prometheus + Grafana kur
+
+helm install monitoring prometheus-community/kube-prometheus-stack \
+ --namespace monitoring \
+ --create-namespace \
+ --set grafana.adminPassword=admin123 \
+ --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
+
+# 5. CRD'ler hazır olsun
+
+kubectl wait --for=condition=ready pod \
+ -l app.kubernetes.io/name=prometheus \
+ -n monitoring --timeout=120s
+
+# 6. KubePocket kur
+
+helm install kubepocket ./helm/kubepocket \
+ --namespace kubepocket \
+ --create-namespace \
+ --set image.repository=kubepocket \
+ --set image.tag=local \
+ --set image.pullPolicy=Never \
+ --set clusterName=minikube-local \
+ --set allowedOrigins=http://localhost:3000 \
+ --set serviceMonitor.enabled=true \
+ --set postgresql.auth.password=kubepocket123
+
+# 7. Pod'ların hazır olmasını bekle
+
+kubectl wait --for=condition=ready pod \
+ -l app.kubernetes.io/name=kubepocket \
+ -n kubepocket --timeout=120s
