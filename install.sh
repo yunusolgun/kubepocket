@@ -1,83 +1,78 @@
 #!/bin/bash
-# install.sh - One-line KubePocket installation script
-
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+echo "🚀 KubePocket kurulumu başlıyor..."
 
-echo -e "${BLUE}================================${NC}"
-echo -e "${GREEN}🚀 KubePocket Installation${NC}"
-echo -e "${BLUE}================================${NC}"
+# 1. Metrics Server
+echo "📦 Metrics Server etkinleştiriliyor..."
+minikube addons enable metrics-server
 
-# Check prerequisites
-command -v kubectl >/dev/null 2>&1 || { echo -e "${RED}❌ kubectl is required but not installed${NC}" >&2; exit 1; }
+# 2. Docker env
+echo "🐳 Minikube Docker env ayarlanıyor..."
+eval $(minikube docker-env)
 
-# Get license key (for paid versions)
-read -p "Enter your license key (press Enter for free tier): " LICENSE_KEY
+# 3. Image build
+echo "🔨 Docker image build ediliyor..."
+docker build -t kubepocket:local -f docker/Dockerfile .
 
-# Create namespace
-echo "📁 Creating namespace..."
-kubectl create namespace kubepocket 2>/dev/null || true
+# 4. Helm repo ekle
+echo "📡 Helm repoları ekleniyor..."
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
 
-# Store license key
-if [ ! -z "$LICENSE_KEY" ]; then
-  echo "🔑 Storing license key..."
-  kubectl create secret generic kubepocket-license \
-    --namespace kubepocket \
-    --from-literal=key=$LICENSE_KEY \
-    --dry-run=client -o yaml | kubectl apply -f -
-fi
+# 5. Prometheus + Grafana kur
+echo "📊 Prometheus + Grafana kuruluyor..."
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --create-namespace \
+  --set grafana.adminPassword=admin123 \
+  --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
+  --wait --timeout 3m
 
-# Store kubeconfig for cluster access
-echo "🔐 Storing kubeconfig..."
-kubectl create secret generic kubepocket-kubeconfig \
+# 6. KubePocket kur
+echo "🎯 KubePocket kuruluyor..."
+helm install kubepocket ./helm/kubepocket \
   --namespace kubepocket \
-  --from-file=config=${KUBECONFIG:-$HOME/.kube/config} \
-  --dry-run=client -o yaml | kubectl apply -f -
+  --create-namespace \
+  --set image.repository=kubepocket \
+  --set image.tag=local \
+  --set image.pullPolicy=Never \
+  --set clusterName=minikube-local \
+  --set allowedOrigins=http://localhost:3000 \
+  --set serviceMonitor.enabled=true \
+  --set postgresql.auth.password=kubepocket123 \
+  --wait --timeout 3m
 
-# Apply RBAC
-echo "🔒 Applying RBAC rules..."
-kubectl apply -f https://raw.githubusercontent.com/kubepocket/kubepocket/main/k8s/rbac.yaml
+# 7. Test pod'ları
+echo "🧪 Test pod'ları kuruluyor..."
+kubectl apply -f testpods/03-oom-pod.yaml
+kubectl apply -f testpods/04-crash-loop-pod.yaml
+kubectl apply -f testpods/08-anomaly-cpu-pod.yaml
+kubectl apply -f testpods/09-liveness-fail-pod.yaml
 
-# Apply ConfigMap
-echo "⚙️ Applying configuration..."
-kubectl apply -f https://raw.githubusercontent.com/kubepocket/kubepocket/main/k8s/configmap.yaml
-
-# Apply PVC
-echo "💾 Creating persistent volume..."
-kubectl apply -f https://raw.githubusercontent.com/kubepocket/kubepocket/main/k8s/pvc.yaml
-
-# Apply Deployment
-echo "🚀 Deploying KubePocket..."
-kubectl apply -f https://raw.githubusercontent.com/kubepocket/kubepocket/main/k8s/deployment.yaml
-
-# Apply Service
-echo "🌐 Exposing services..."
-kubectl apply -f https://raw.githubusercontent.com/kubepocket/kubepocket/main/k8s/service.yaml
-
-# Wait for deployment
-echo "⏳ Waiting for deployment to be ready..."
-kubectl wait --namespace kubepocket \
-  --for=condition=available \
-  --timeout=120s \
-  deployment/kubepocket
-
-# Show status
-echo -e "${GREEN}================================${NC}"
-echo -e "${GREEN}✅ KubePocket installed successfully!${NC}"
-echo -e "${GREEN}================================${NC}"
+# 8. API key oluştur
+echo "🔑 API key oluşturuluyor..."
+sleep 10
+API_KEY=$(kubectl exec -n kubepocket deploy/kubepocket -- python3 -c "
+import sys; sys.path.insert(0, '/app')
+from db.models import SessionLocal
+from api.auth import create_api_key
+db = SessionLocal()
+key = create_api_key(db, name='admin')
+print(key)
+db.close()
+")
 echo ""
-echo "📊 Access the API:"
-echo "  kubectl port-forward -n kubepocket svc/kubepocket 8000:8000"
-echo "  curl http://localhost:8000/health"
+echo "=========================================="
+echo "✅ Kurulum tamamlandı!"
+echo "=========================================="
+echo "🔑 API Key: $API_KEY"
 echo ""
-echo "📈 Access metrics:"
-echo "  kubectl port-forward -n kubepocket svc/kubepocket-metrics 8001:8001"
-echo "  curl http://localhost:8001/metrics"
+echo "Port-forward için:"
+echo "  kubectl port-forward -n kubepocket svc/kubepocket 8000:8000 &"
+echo "  kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80 &"
+echo "  kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090 &"
 echo ""
-echo "📚 Documentation: https://docs.kubepocket.com"
-echo "💬 Support: support@kubepocket.com"
+echo "İlk collector çalıştırmak için:"
+echo "  kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.py"
+echo "=========================================="
