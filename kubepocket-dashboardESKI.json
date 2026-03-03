@@ -18,7 +18,7 @@
   "title": "KubePocket",
   "uid": "kubepocket-main",
   "schemaVersion": 36,
-  "version": 12,
+  "version": 22,
   "refresh": "30s",
   "templating": {
     "list": [
@@ -254,12 +254,16 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "legend": {
           "displayMode": "table",
           "placement": "right",
-          "values": ["value"]
+          "values": [
+            "value"
+          ]
         }
       }
     },
@@ -315,7 +319,9 @@
       "options": {
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "showUnfilled": true
       }
@@ -372,7 +378,9 @@
       "options": {
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "showUnfilled": true
       }
@@ -475,7 +483,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "colorMode": "background",
         "orientation": "horizontal"
@@ -530,7 +540,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "colorMode": "background"
       }
@@ -584,7 +596,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "colorMode": "background"
       }
@@ -641,7 +655,9 @@
       "options": {
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "showUnfilled": true
       }
@@ -679,7 +695,9 @@
       "options": {
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         }
       }
     },
@@ -716,7 +734,9 @@
       "options": {
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         }
       }
     },
@@ -819,7 +839,9 @@
       "options": {
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "showUnfilled": true
       }
@@ -876,7 +898,9 @@
       "options": {
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "showUnfilled": true
       }
@@ -933,7 +957,9 @@
       "options": {
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "showUnfilled": true
       }
@@ -1063,7 +1089,9 @@
       "options": {
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         }
       }
     },
@@ -1124,7 +1152,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "colorMode": "background"
       }
@@ -1177,7 +1207,9 @@
       "options": {
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         }
       }
     },
@@ -1214,7 +1246,9 @@
       "options": {
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         }
       }
     },
@@ -1274,7 +1308,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "colorMode": "background"
       }
@@ -1711,7 +1747,9 @@
       "options": {
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         }
       }
     },
@@ -1973,7 +2011,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "orientation": "auto",
         "textMode": "auto",
@@ -2028,7 +2068,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "orientation": "auto",
         "textMode": "auto",
@@ -2084,7 +2126,9 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "colorMode": "background"
       }
@@ -2138,98 +2182,342 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"]
+          "calcs": [
+            "lastNotNull"
+          ]
         },
         "colorMode": "background"
       }
     },
     {
       "id": 905,
-      "title": "CPU Efficiency by Pod (%) \u2014 Request vs Actual",
-      "type": "bargauge",
+      "title": "CPU \u2014 Request (mavi saydam) + Actual (turuncu) \u2014 Top 10",
+      "type": "barchart",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
-        "h": 12,
-        "w": 12,
+        "h": 14,
+        "w": 24,
         "x": 0,
         "y": 206
       },
       "targets": [
         {
-          "expr": "kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"}",
-          "legendFormat": "Request: {{exported_pod}}",
+          "expr": "topk(10, kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"})",
+          "legendFormat": "{{exported_pod}}",
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         },
         {
-          "expr": "kubepocket_pod_cpu_actual_cores{exported_namespace=~\"$namespace\"}",
-          "legendFormat": "Actual: {{exported_pod}}",
+          "expr": "topk(10, kubepocket_pod_cpu_actual_cores{exported_namespace=~\"$namespace\"})",
+          "legendFormat": "{{exported_pod}}",
           "instant": true,
-          "refId": "B"
+          "refId": "B",
+          "format": "table"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": {
-            "mode": "palette-classic"
+          "decimals": 3,
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "stacking": {
+              "mode": "none"
+            }
           }
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Request"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 30
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Actual"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 90
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"]
+        "barWidth": 0.8,
+        "groupWidth": 0.9,
+        "fillOpacity": 80,
+        "gradientMode": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
         },
-        "displayMode": "basic"
-      }
+        "tooltip": {
+          "mode": "multi"
+        },
+        "stacking": "none",
+        "orientation": "horizontal",
+        "xTickLabelRotation": 0,
+        "xTickLabelMaxLength": 30,
+        "xField": "Pod",
+        "barMaxWidth": 30
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "cluster": true,
+              "instance": true,
+              "job": true,
+              "namespace": true,
+              "pod": true,
+              "container": true,
+              "endpoint": true,
+              "service": true,
+              "exported_namespace": true
+            },
+            "renameByName": {
+              "exported_pod": "Pod",
+              "Value #A": "Request",
+              "Value #B": "Actual"
+            }
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "Pod",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "Pod",
+                "Request",
+                "Actual"
+              ]
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": [
+              {
+                "displayName": "Request",
+                "desc": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "limit",
+          "options": {
+            "limitField": 10
+          }
+        }
+      ]
     },
     {
       "id": 906,
-      "title": "Memory Efficiency by Pod (%) \u2014 Request vs Actual",
-      "type": "bargauge",
+      "title": "Memory \u2014 Request (mavi saydam) + Actual (turuncu) \u2014 Top 10",
+      "type": "barchart",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
-        "h": 12,
-        "w": 12,
-        "x": 12,
-        "y": 206
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 222
       },
       "targets": [
         {
-          "expr": "kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\"}",
-          "legendFormat": "Request: {{exported_pod}}",
+          "expr": "topk(10, kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\"})",
+          "legendFormat": "{{exported_pod}}",
           "instant": true,
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         },
         {
-          "expr": "kubepocket_pod_memory_actual_gib{exported_namespace=~\"$namespace\"}",
-          "legendFormat": "Actual: {{exported_pod}}",
+          "expr": "topk(10, kubepocket_pod_memory_actual_gib{exported_namespace=~\"$namespace\"})",
+          "legendFormat": "{{exported_pod}}",
           "instant": true,
-          "refId": "B"
+          "refId": "B",
+          "format": "table"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": {
-            "mode": "palette-classic"
+          "decimals": 3,
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "stacking": {
+              "mode": "none"
+            }
           }
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Request"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 30
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Actual"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 90
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"]
+        "barWidth": 0.8,
+        "groupWidth": 0.9,
+        "fillOpacity": 80,
+        "gradientMode": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
         },
-        "displayMode": "basic"
-      }
+        "tooltip": {
+          "mode": "multi"
+        },
+        "stacking": "none",
+        "orientation": "horizontal",
+        "xTickLabelRotation": 0,
+        "xTickLabelMaxLength": 30,
+        "xField": "Pod",
+        "barMaxWidth": 30
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "cluster": true,
+              "instance": true,
+              "job": true,
+              "namespace": true,
+              "pod": true,
+              "container": true,
+              "endpoint": true,
+              "service": true,
+              "exported_namespace": true
+            },
+            "renameByName": {
+              "exported_pod": "Pod",
+              "Value #A": "Request",
+              "Value #B": "Actual"
+            }
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "Pod",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "Pod",
+                "Request",
+                "Actual"
+              ]
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": [
+              {
+                "displayName": "Request",
+                "desc": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "limit",
+          "options": {
+            "limitField": 10
+          }
+        }
+      ]
     },
     {
       "id": 907,

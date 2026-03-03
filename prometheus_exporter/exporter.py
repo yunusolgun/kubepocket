@@ -85,6 +85,8 @@ class KubePocketCollector:
                                             'CPU efficiency pct (actual/request)',     labels=['pod', 'namespace', 'cluster'])
             pod_mem_eff = GaugeMetricFamily('kubepocket_pod_memory_efficiency_pct',
                                             'Memory efficiency pct (actual/request)', labels=['pod', 'namespace', 'cluster'])
+            pod_startup = GaugeMetricFamily('kubepocket_pod_startup_seconds',
+                                            'Pod startup latency seconds (Pending->Running)', labels=['pod', 'namespace', 'cluster'])
             pod_event_count = GaugeMetricFamily('kubepocket_pod_event_count',            'Kubernetes event count per pod (last 24h)', labels=[
                                                 'pod', 'namespace', 'event_type', 'cluster'])
 
@@ -129,6 +131,10 @@ class KubePocketCollector:
                         pod_labels, pod.get('memory_request', 0))
                     pod_restarts.add_metric(pod_labels, restarts)
                     pod_age.add_metric(pod_labels, pod.get('age_hours', 0))
+
+                    startup = pod.get('startup_seconds')
+                    if startup is not None:
+                        pod_startup.add_metric(pod_labels, startup)
 
                     cpu_act = pod.get('cpu_actual')
                     mem_act = pod.get('memory_actual_gib')
@@ -230,6 +236,7 @@ class KubePocketCollector:
             yield pod_waste_cpu
             yield pod_waste_memory
             yield cluster_waste_pct
+            yield pod_startup
             yield pod_event_count
             yield pod_cpu_actual
             yield pod_mem_actual

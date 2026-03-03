@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 import time
 
+
 class K8sClient:
     def __init__(self, context=None):
         try:
@@ -13,7 +14,8 @@ class K8sClient:
         except:
             try:
                 config.load_kube_config(context=context)
-                print(f"✅ Kubeconfig yüklendi (context: {context or 'default'})")
+                print(
+                    f"✅ Kubeconfig yüklendi (context: {context or 'default'})")
             except Exception as e:
                 print(f"❌ Kubernetes bağlantı hatası: {e}")
                 raise
@@ -112,7 +114,8 @@ class K8sClient:
     def _process_pod(self, pod):
         restart_count = 0
         if pod.status.container_statuses:
-            restart_count = sum(cs.restart_count for cs in pod.status.container_statuses)
+            restart_count = sum(
+                cs.restart_count for cs in pod.status.container_statuses)
 
         cpu_request = 0
         memory_request = 0
@@ -121,14 +124,36 @@ class K8sClient:
 
         for container in pod.spec.containers:
             if container.resources.requests:
-                cpu_request += self.parse_cpu(container.resources.requests.get('cpu', '0'))
-                memory_request += self.parse_memory(container.resources.requests.get('memory', '0'))
+                cpu_request += self.parse_cpu(
+                    container.resources.requests.get('cpu', '0'))
+                memory_request += self.parse_memory(
+                    container.resources.requests.get('memory', '0'))
             if container.resources.limits:
-                cpu_limit += self.parse_cpu(container.resources.limits.get('cpu', '0'))
-                memory_limit += self.parse_memory(container.resources.limits.get('memory', '0'))
+                cpu_limit += self.parse_cpu(
+                    container.resources.limits.get('cpu', '0'))
+                memory_limit += self.parse_memory(
+                    container.resources.limits.get('memory', '0'))
 
         status = pod.status.phase
         age = datetime.utcnow() - pod.metadata.creation_timestamp.replace(tzinfo=None)
+
+        # Startup latency: creationTimestamp -> ilk container'ın startedAt
+        # Sadece pod 1 saatten gençse anlamlı (restart'ta startedAt yanıltıcı olur)
+        startup_seconds = None
+        try:
+            if pod.status.container_statuses and age.total_seconds() < 3600:
+                for cs in pod.status.container_statuses:
+                    if cs.state and cs.state.running and cs.state.running.started_at:
+                        started_at = cs.state.running.started_at.replace(
+                            tzinfo=None)
+                        created_at = pod.metadata.creation_timestamp.replace(
+                            tzinfo=None)
+                        diff = (started_at - created_at).total_seconds()
+                        if 0 < diff < 600:  # max 10 dakika — makul startup süresi
+                            startup_seconds = round(diff, 1)
+                        break
+        except Exception:
+            pass
 
         return {
             'name': pod.metadata.name,
@@ -141,7 +166,8 @@ class K8sClient:
             'memory_limit': memory_limit,
             'node_name': pod.spec.node_name,
             'age_hours': age.total_seconds() / 3600,
-            'created_at': pod.metadata.creation_timestamp.isoformat()
+            'created_at': pod.metadata.creation_timestamp.isoformat(),
+            'startup_seconds': startup_seconds,
         }
 
     def get_high_restart_pods(self, threshold=5):
@@ -175,8 +201,10 @@ class K8sClient:
                 cpu_total = 0
                 mem_total = 0
                 for container in item.get('containers', []):
-                    cpu_total += self.parse_cpu(container['usage'].get('cpu', '0'))
-                    mem_total += self.parse_memory(container['usage'].get('memory', '0'))
+                    cpu_total += self.parse_cpu(
+                        container['usage'].get('cpu', '0'))
+                    mem_total += self.parse_memory(
+                        container['usage'].get('memory', '0'))
                 usage[pod_name] = {
                     'cpu_actual': round(cpu_total, 4),
                     'memory_actual_gib': round(mem_total, 4),
@@ -200,7 +228,9 @@ class K8sClient:
 
                 pod['cpu_actual'] = cpu_act
                 pod['memory_actual_gib'] = mem_act
-                pod['cpu_efficiency_pct'] = round(cpu_act / cpu_req * 100, 1) if cpu_act is not None and cpu_req > 0 else None
-                pod['memory_efficiency_pct'] = round(mem_act / mem_req * 100, 1) if mem_act is not None and mem_req > 0 else None
+                pod['cpu_efficiency_pct'] = round(
+                    cpu_act / cpu_req * 100, 1) if cpu_act is not None and cpu_req > 0 else None
+                pod['memory_efficiency_pct'] = round(
+                    mem_act / mem_req * 100, 1) if mem_act is not None and mem_req > 0 else None
 
         return metrics
