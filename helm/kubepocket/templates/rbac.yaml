@@ -13,7 +13,7 @@ metadata:
     {{- include "kubepocket.labels" . | nindent 4 }}
 rules:
 - apiGroups: [""]
-  resources: ["pods", "nodes", "namespaces", "events"]
+  resources: ["pods", "nodes", "namespaces", "events", "persistentvolumeclaims", "persistentvolumes"]
   verbs: ["get", "list", "watch"]
 - apiGroups: ["metrics.k8s.io"]
   resources: ["pods", "nodes"]

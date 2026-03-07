@@ -101,6 +101,37 @@ serviceMonitor:
   labels: {}
   metricRelabelings: []
 
+# =============================================
+# Monitoring entegrasyonu
+#
+# existingStack: false (varsayılan)
+#   → install.sh, kube-prometheus-stack'i monitoring
+#     namespace'ine kurar. Grafana + Prometheus dahil.
+#
+# existingStack: true
+#   → Müşterinin mevcut Prometheus/Grafana stack'ine
+#     entegre olur. Grafana + Prometheus kurulmaz.
+#   - serviceMonitor.enabled: true yaparak ServiceMonitor'ı
+#     müşterinin Prometheus'unun baktığı namespace'e koy
+#   - grafanaDashboard.enabled: true yaparak dashboard'u
+#     otomatik olarak Grafana'ya yükle (ConfigMap via sidecar)
+# =============================================
+monitoring:
+  existingStack: false
+
+  # Müşterinin Prometheus'unun namespace'i
+  # ServiceMonitor bu namespace'e deploy edilir
+  # (existingStack: true ise geçerli)
+  namespace: "monitoring"
+
+  # Grafana dashboard — ConfigMap olarak deploy edilir
+  # Grafana sidecar (grafana.sidecar.dashboards.enabled=true)
+  # ile otomatik yüklenir
+  grafanaDashboard:
+    enabled: false
+    namespace: "monitoring" # Grafana'nın baktığı namespace
+    folder: "KubePocket" # Grafana'da görünecek klasör adı
+
 podDisruptionBudget:
   enabled: false
   minAvailable: 1

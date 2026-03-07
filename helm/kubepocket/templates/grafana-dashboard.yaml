@@ -1,0 +1,28 @@
+{{- if .Values.monitoring.grafanaDashboard.enabled }}
+# Dashboard ConfigMap — only use if your Grafana sidecar supports it.
+# For most setups, dashboard import is handled automatically by install.sh
+# via the Grafana API after installation.
+#
+# To enable sidecar-based loading:
+#   helm upgrade kubepocket ./helm/kubepocket \
+#     --set monitoring.grafanaDashboard.enabled=true \
+#     --set monitoring.grafanaDashboard.namespace=monitoring
+#
+# NOTE: The full dashboard JSON must be provided via:
+#   --set-file monitoring.grafanaDashboard.json=kubepocket-dashboard.json
+{{- if .Values.monitoring.grafanaDashboard.json }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kubepocket.fullname" . }}-dashboard
+  namespace: {{ .Values.monitoring.grafanaDashboard.namespace }}
+  labels:
+    {{- include "kubepocket.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+    {{- if .Values.monitoring.grafanaDashboard.folder }}
+    grafana_folder: {{ .Values.monitoring.grafanaDashboard.folder | quote }}
+    {{- end }}
+data:
+  kubepocket-dashboard.json: {{ .Values.monitoring.grafanaDashboard.json | toJson }}
+{{- end }}
+{{- end }}
