@@ -18,7 +18,7 @@
   "title": "KubePocket",
   "uid": "kubepocket-main",
   "schemaVersion": 36,
-  "version": 29,
+  "version": 40,
   "refresh": "30s",
   "templating": {
     "list": [
@@ -2697,243 +2697,6 @@
       ]
     },
     {
-      "id": 1000,
-      "title": "\ud83d\ude80 POD STARTUP LATENCY",
-      "type": "text",
-      "gridPos": {
-        "h": 2,
-        "w": 24,
-        "x": 0,
-        "y": 238
-      },
-      "options": {
-        "content": "## Pod Startup Latency \u2014 Pending \u2192 Running (saniye)",
-        "mode": "markdown"
-      }
-    },
-    {
-      "id": 1001,
-      "title": "Avg Startup Latency (sn)",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 0,
-        "y": 240
-      },
-      "targets": [
-        {
-          "expr": "avg(kubepocket_pod_startup_seconds{exported_namespace=~\"$namespace\"})",
-          "refId": "A",
-          "instant": true
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 30
-              },
-              {
-                "color": "red",
-                "value": 120
-              }
-            ]
-          },
-          "color": {
-            "mode": "thresholds"
-          }
-        }
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "background"
-      }
-    },
-    {
-      "id": 1002,
-      "title": "Max Startup Latency (sn)",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 6,
-        "y": 240
-      },
-      "targets": [
-        {
-          "expr": "max(kubepocket_pod_startup_seconds{exported_namespace=~\"$namespace\"})",
-          "refId": "A",
-          "instant": true
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 60
-              },
-              {
-                "color": "red",
-                "value": 180
-              }
-            ]
-          },
-          "color": {
-            "mode": "thresholds"
-          }
-        }
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "background"
-      }
-    },
-    {
-      "id": 1003,
-      "title": "Yava\u015f Ba\u015flayan Podlar (>60s)",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 12,
-        "y": 240
-      },
-      "targets": [
-        {
-          "expr": "count(kubepocket_pod_startup_seconds{exported_namespace=~\"$namespace\"} > 60) or vector(0)",
-          "refId": "A",
-          "instant": true
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 3
-              }
-            ]
-          },
-          "color": {
-            "mode": "thresholds"
-          }
-        }
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "background"
-      }
-    },
-    {
-      "id": 1004,
-      "title": "Pod Startup Latency \u2014 T\u00fcm Podlar (sn)",
-      "type": "bargauge",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 246
-      },
-      "targets": [
-        {
-          "expr": "sort_desc(kubepocket_pod_startup_seconds{exported_namespace=~\"$namespace\"})",
-          "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
-          "instant": true,
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 30
-              },
-              {
-                "color": "red",
-                "value": 120
-              }
-            ]
-          },
-          "color": {
-            "mode": "thresholds"
-          }
-        }
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "orientation": "horizontal",
-        "displayMode": "lcd",
-        "showUnfilled": true
-      }
-    },
-    {
       "id": 1100,
       "title": "\ud83d\udda5\ufe0f NODE METRICS",
       "type": "text",
@@ -3785,6 +3548,757 @@
                 "Requested",
                 "Actual"
               ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 1300,
+      "title": "\ud83d\udcbe STORAGE / PVC",
+      "type": "text",
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 286
+      },
+      "options": {
+        "content": "## PVC & Storage \u0130zleme",
+        "mode": "markdown"
+      }
+    },
+    {
+      "id": 1301,
+      "title": "Total PVC Capacity (GiB)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 288
+      },
+      "targets": [
+        {
+          "expr": "sum(kubepocket_pvc_capacity_gib)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background"
+      }
+    },
+    {
+      "id": 1302,
+      "title": "Bound PVCs",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 288
+      },
+      "targets": [
+        {
+          "expr": "sum(kubepocket_pvc_bound)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background"
+      }
+    },
+    {
+      "id": 1303,
+      "title": "Unbound PVCs",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 288
+      },
+      "targets": [
+        {
+          "expr": "count(kubepocket_pvc_bound) - sum(kubepocket_pvc_bound)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background"
+      }
+    },
+    {
+      "id": 1304,
+      "title": "Total Requested (GiB)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 288
+      },
+      "targets": [
+        {
+          "expr": "sum(kubepocket_pvc_requested_gib)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background"
+      }
+    },
+    {
+      "id": 1305,
+      "title": "PVC Capacity \u2014 namespace / pvc bazl\u0131 (GiB)",
+      "type": "bargauge",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 292
+      },
+      "targets": [
+        {
+          "expr": "kubepocket_pvc_capacity_gib",
+          "legendFormat": "{{pvc}} / {{exported_namespace}}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "horizontal",
+        "displayMode": "lcd",
+        "showUnfilled": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 1306,
+      "title": "PVC Detay Tablosu",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 292
+      },
+      "targets": [
+        {
+          "expr": "kubepocket_pvc_bound",
+          "instant": true,
+          "refId": "A",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_pvc_capacity_gib",
+          "instant": true,
+          "refId": "B",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_pvc_requested_gib",
+          "instant": true,
+          "refId": "C",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 2
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Bound"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "\u2705 Bound",
+                        "color": "green"
+                      },
+                      "0": {
+                        "text": "\u274c Unbound",
+                        "color": "red"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Namespace"
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "cluster": true,
+              "instance": true,
+              "job": true,
+              "pod": true,
+              "container": true,
+              "endpoint": true,
+              "service": true,
+              "namespace": true
+            },
+            "renameByName": {
+              "exported_namespace": "Namespace",
+              "pvc": "PVC",
+              "storageclass": "StorageClass",
+              "Value #A": "Bound",
+              "Value #B": "Capacity (Gi)",
+              "Value #C": "Requested (Gi)"
+            }
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "PVC",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "Namespace",
+                "PVC",
+                "StorageClass",
+                "Bound",
+                "Capacity (Gi)",
+                "Requested (Gi)"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 1307,
+      "title": "\ud83d\udea8 Active Alerts \u2014 severity \u00f6zeti (critical/warning/anomaly)",
+      "type": "bargauge",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 302
+      },
+      "targets": [
+        {
+          "expr": "sum by (severity) (kubepocket_active_alerts)",
+          "legendFormat": "{{severity}}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "critical"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "warning"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "anomaly"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "purple"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "horizontal",
+        "displayMode": "lcd",
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 1308,
+      "title": "\ud83d\udea8 Active Alerts \u2014 namespace & severity detay\u0131",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 302
+      },
+      "targets": [
+        {
+          "expr": "kubepocket_active_alerts",
+          "legendFormat": "",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "critical": {
+                        "color": "red"
+                      },
+                      "warning": {
+                        "color": "orange"
+                      },
+                      "anomaly": {
+                        "color": "purple"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Count",
+            "desc": true
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "instance": true,
+              "job": true,
+              "pod": true,
+              "container": true,
+              "endpoint": true,
+              "service": true,
+              "namespace": true
+            },
+            "renameByName": {
+              "namespace": "Namespace",
+              "severity": "Severity",
+              "cluster": "Cluster",
+              "Value": "Count",
+              "exported_namespace": "Namespace"
+            }
+          }
+        }
+      ],
+      "description": "Alert say\u0131lar\u0131 namespace+severity bazl\u0131. PVC doluluk/unbound alert detaylar\u0131 i\u00e7in: GET /api/alerts/ endpoint'ini kullan\u0131n veya kubepocket_active_alerts metri\u011fine bak\u0131n."
+    },
+    {
+      "id": 1309,
+      "title": "\ud83d\udea8 Alert Mesajlar\u0131 (son 50)",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 310
+      },
+      "targets": [
+        {
+          "expr": "kubepocket_alert_detail",
+          "instant": true,
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "critical": {
+                        "text": "\ud83d\udd34 critical",
+                        "color": "red"
+                      },
+                      "warning": {
+                        "text": "\ud83d\udfe0 warning",
+                        "color": "orange"
+                      },
+                      "anomaly": {
+                        "text": "\ud83d\udfe3 anomaly",
+                        "color": "purple"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "message"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "severity",
+            "desc": true
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "cluster": true,
+              "instance": true,
+              "job": true,
+              "pod": true,
+              "container": true,
+              "endpoint": true,
+              "service": true,
+              "Value": true,
+              "namespace": true
+            },
+            "renameByName": {
+              "namespace": "Namespace",
+              "severity": "Severity",
+              "message": "Mesaj",
+              "exported_namespace": "Namespace"
             }
           }
         }

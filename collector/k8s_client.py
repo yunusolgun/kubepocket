@@ -137,24 +137,6 @@ class K8sClient:
         status = pod.status.phase
         age = datetime.utcnow() - pod.metadata.creation_timestamp.replace(tzinfo=None)
 
-        # Startup latency: creationTimestamp -> ilk container'ın startedAt
-        # Sadece pod 1 saatten gençse anlamlı (restart'ta startedAt yanıltıcı olur)
-        startup_seconds = None
-        try:
-            if pod.status.container_statuses and age.total_seconds() < 3600:
-                for cs in pod.status.container_statuses:
-                    if cs.state and cs.state.running and cs.state.running.started_at:
-                        started_at = cs.state.running.started_at.replace(
-                            tzinfo=None)
-                        created_at = pod.metadata.creation_timestamp.replace(
-                            tzinfo=None)
-                        diff = (started_at - created_at).total_seconds()
-                        if 0 < diff < 600:  # max 10 dakika — makul startup süresi
-                            startup_seconds = round(diff, 1)
-                        break
-        except Exception:
-            pass
-
         return {
             'name': pod.metadata.name,
             'namespace': pod.metadata.namespace,
@@ -167,7 +149,6 @@ class K8sClient:
             'node_name': pod.spec.node_name,
             'age_hours': age.total_seconds() / 3600,
             'created_at': pod.metadata.creation_timestamp.isoformat(),
-            'startup_seconds': startup_seconds,
         }
 
     def get_high_restart_pods(self, threshold=5):
@@ -212,6 +193,73 @@ class K8sClient:
             return usage
         except Exception:
             return {}
+
+    def collect_pvc_metrics(self):
+        """PVC ve PV bazlı storage izleme."""
+        try:
+            pvcs = self.core_v1.list_persistent_volume_claim_for_all_namespaces()
+            pvs = self.core_v1.list_persistent_volume()
+
+            # PV capacity map
+            pv_capacity = {}
+            pv_reclaim = {}
+            for pv in pvs.items:
+                name = pv.metadata.name
+                pv_capacity[name] = self.parse_memory(
+                    pv.spec.capacity.get('storage', '0'))
+                pv_reclaim[name] = pv.spec.persistent_volume_reclaim_policy or 'Retain'
+
+            results = []
+            for pvc in pvcs.items:
+                namespace = pvc.metadata.namespace
+                name = pvc.metadata.name
+                phase = pvc.status.phase or 'Unknown'
+                pv_name = pvc.spec.volume_name or ''
+                storage_class = pvc.spec.storage_class_name or ''
+                requested = self.parse_memory(
+                    pvc.spec.resources.requests.get('storage', '0'))
+                capacity = pv_capacity.get(
+                    pv_name, requested) if pv_name else requested
+                access_modes = pvc.spec.access_modes or []
+
+                # Prometheus node-exporter'dan actual kullanım
+                actual_gib = None
+                used_pct = None
+                try:
+                    result = self.metrics_api.list_cluster_custom_object(
+                        group='metrics.k8s.io', version='v1beta1', plural='persistentvolumeclaims'
+                    )
+                    for item in result.get('items', []):
+                        if item['metadata']['name'] == name and item['metadata']['namespace'] == namespace:
+                            actual_gib = self.parse_memory(
+                                item.get('usage', {}).get('storage', '0'))
+                            break
+                except Exception:
+                    pass
+
+                if actual_gib is not None and capacity > 0:
+                    used_pct = round(actual_gib / capacity * 100, 1)
+
+                results.append({
+                    'namespace': namespace,
+                    'name': name,
+                    'phase': phase,
+                    'pv_name': pv_name,
+                    'storage_class': storage_class,
+                    'access_modes': ','.join(access_modes),
+                    'requested_gib': round(requested, 3),
+                    'capacity_gib': round(capacity, 3),
+                    'actual_gib': round(actual_gib, 3) if actual_gib is not None else None,
+                    'used_pct': used_pct,
+                    'reclaim_policy': pv_reclaim.get(pv_name, 'Unknown'),
+                    'bound': phase == 'Bound',
+                })
+
+            return results
+
+        except Exception as e:
+            print(f"❌ PVC metrics hatası: {e}")
+            return []
 
     def collect_node_metrics(self):
         """Node bazlı kapasite, allocatable ve pod dağılımı."""

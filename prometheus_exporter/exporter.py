@@ -3,6 +3,7 @@
 from sqlalchemy import func
 from prometheus_client import REGISTRY
 from prometheus_client.core import GaugeMetricFamily
+from collector.k8s_client import K8sClient
 from collector.cost import calculate_relative_cost, detect_waste
 from db.repository import MetricRepository
 from db.models import Statistics, KubeEvent, SessionLocal
@@ -85,6 +86,12 @@ class KubePocketCollector:
                                             'CPU efficiency pct (actual/request)',     labels=['pod', 'namespace', 'cluster'])
             pod_mem_eff = GaugeMetricFamily('kubepocket_pod_memory_efficiency_pct',
                                             'Memory efficiency pct (actual/request)', labels=['pod', 'namespace', 'cluster'])
+            pvc_capacity = GaugeMetricFamily('kubepocket_pvc_capacity_gib',   'PVC capacity (GiB)',          labels=[
+                                             'namespace', 'pvc', 'storageclass', 'cluster'])
+            pvc_requested = GaugeMetricFamily('kubepocket_pvc_requested_gib',  'PVC requested size (GiB)',    labels=[
+                                              'namespace', 'pvc', 'storageclass', 'cluster'])
+            pvc_bound = GaugeMetricFamily('kubepocket_pvc_bound',           'PVC bound status (1=Bound)',  labels=[
+                                          'namespace', 'pvc', 'storageclass', 'cluster'])
             node_cpu_cap = GaugeMetricFamily(
                 'kubepocket_node_cpu_capacity',       'Node CPU capacity (cores)',              labels=['node', 'cluster'])
             node_cpu_alloc = GaugeMetricFamily(
@@ -115,8 +122,6 @@ class KubePocketCollector:
                 'kubepocket_node_pods_pct',           'Pod count % of capacity',               labels=['node', 'cluster'])
             node_ready = GaugeMetricFamily(
                 'kubepocket_node_ready',              'Node ready status (1=Ready)',            labels=['node', 'cluster'])
-            pod_startup = GaugeMetricFamily('kubepocket_pod_startup_seconds',
-                                            'Pod startup latency seconds (Pending->Running)', labels=['pod', 'namespace', 'cluster'])
             pod_event_count = GaugeMetricFamily('kubepocket_pod_event_count',            'Kubernetes event count per pod (last 24h)', labels=[
                                                 'pod', 'namespace', 'event_type', 'cluster'])
 
@@ -161,10 +166,6 @@ class KubePocketCollector:
                         pod_labels, pod.get('memory_request', 0))
                     pod_restarts.add_metric(pod_labels, restarts)
                     pod_age.add_metric(pod_labels, pod.get('age_hours', 0))
-
-                    startup = pod.get('startup_seconds')
-                    if startup is not None:
-                        pod_startup.add_metric(pod_labels, startup)
 
                     cpu_act = pod.get('cpu_actual')
                     mem_act = pod.get('memory_actual_gib')
@@ -232,9 +233,21 @@ class KubePocketCollector:
                 cluster_waste_pct.add_metric(
                     [CLUSTER_NAME, 'memory'], summary.get('wasted_memory_pct', 0))
 
+            # PVC metrikleri
+            try:
+                k8s = K8sClient()
+                pvc_data = k8s.collect_pvc_metrics()
+                for pv in pvc_data:
+                    pl = [pv['namespace'], pv['name'],
+                          pv['storage_class'], CLUSTER_NAME]
+                    pvc_capacity.add_metric(pl, pv['capacity_gib'])
+                    pvc_requested.add_metric(pl, pv['requested_gib'])
+                    pvc_bound.add_metric(pl, 1.0 if pv['bound'] else 0.0)
+            except Exception as e:
+                logger.warning(f"PVC metrics error: {e}")
+
             # Node metrikleri
             try:
-                from collector.k8s_client import K8sClient
                 k8s = K8sClient()
                 node_data = k8s.collect_node_metrics()
                 for nd in node_data:
@@ -295,6 +308,9 @@ class KubePocketCollector:
             yield pod_waste_cpu
             yield pod_waste_memory
             yield cluster_waste_pct
+            yield pvc_capacity
+            yield pvc_requested
+            yield pvc_bound
             yield node_cpu_cap
             yield node_cpu_alloc
             yield node_cpu_req
@@ -310,12 +326,44 @@ class KubePocketCollector:
             yield node_pods_run
             yield node_pods_pct
             yield node_ready
-            yield pod_startup
             yield pod_event_count
             yield pod_cpu_actual
             yield pod_mem_actual
             yield pod_cpu_eff
             yield pod_mem_eff
+            # Active alerts metriği — namespace+severity bazlı count
+            from db.models import Alert
+            from sqlalchemy import func as sqlfunc
+            active_counts = (
+                db.query(Alert.namespace, Alert.severity,
+                         sqlfunc.count(Alert.id))
+                .filter(Alert.resolved == False)
+                .group_by(Alert.namespace, Alert.severity)
+                .all()
+            )
+            alert_metric = GaugeMetricFamily('kubepocket_active_alerts', 'Active unresolved alert count', labels=[
+                                             'namespace', 'severity', 'cluster'])
+            for namespace, severity, count in active_counts:
+                alert_metric.add_metric(
+                    [namespace or '', severity or 'warning', CLUSTER_NAME], count)
+            yield alert_metric
+
+            # Alert detay metriği — mesajla birlikte
+            recent_alerts = (
+                db.query(Alert)
+                .filter(Alert.resolved == False)
+                .order_by(Alert.created_at.desc())
+                .limit(50)
+                .all()
+            )
+            alert_detail = GaugeMetricFamily('kubepocket_alert_detail', 'Alert detail with message', labels=[
+                                             'namespace', 'severity', 'message', 'cluster'])
+            for a in recent_alerts:
+                msg = (a.message or '')[:100]
+                alert_detail.add_metric(
+                    [a.namespace or '', a.severity or 'warning', msg, CLUSTER_NAME], 1)
+            yield alert_detail
+
             yield GaugeMetricFamily('kubepocket_up', 'KubePocket exporter status', value=1)
 
         except Exception as e:

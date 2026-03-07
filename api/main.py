@@ -1,5 +1,5 @@
 # api/main.py
-from api.routes import metrics, alerts, clusters, apikeys, cost, events, nodes
+from api.routes import metrics, alerts, clusters, apikeys, cost, events, nodes, storage
 from api.auth import create_api_key
 from db.models import init_db, SessionLocal
 from fastapi import FastAPI
@@ -47,13 +47,14 @@ def on_startup():
         db.close()
 
 
-app.include_router(metrics.router, prefix="/api/metrics", tags=["metrics"])
-app.include_router(alerts.router,  prefix="/api/alerts",  tags=["alerts"])
+app.include_router(metrics.router,  prefix="/api/metrics",  tags=["metrics"])
+app.include_router(alerts.router,   prefix="/api/alerts",   tags=["alerts"])
 app.include_router(clusters.router, prefix="/api/clusters", tags=["clusters"])
-app.include_router(apikeys.router, prefix="/api/keys",    tags=["api-keys"])
-app.include_router(cost.router,    prefix="/api/cost",    tags=["cost"])
-app.include_router(events.router,  prefix="/api/events",  tags=["events"])
-app.include_router(nodes.router,   prefix="/api/nodes",   tags=["nodes"])
+app.include_router(apikeys.router,  prefix="/api/keys",     tags=["api-keys"])
+app.include_router(cost.router,     prefix="/api/cost",     tags=["cost"])
+app.include_router(events.router,   prefix="/api/events",   tags=["events"])
+app.include_router(nodes.router,    prefix="/api/nodes",    tags=["nodes"])
+app.include_router(storage.router,  prefix="/api/storage",  tags=["storage"])
 
 
 @app.get("/")
