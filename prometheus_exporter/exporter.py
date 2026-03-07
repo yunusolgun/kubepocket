@@ -85,6 +85,36 @@ class KubePocketCollector:
                                             'CPU efficiency pct (actual/request)',     labels=['pod', 'namespace', 'cluster'])
             pod_mem_eff = GaugeMetricFamily('kubepocket_pod_memory_efficiency_pct',
                                             'Memory efficiency pct (actual/request)', labels=['pod', 'namespace', 'cluster'])
+            node_cpu_cap = GaugeMetricFamily(
+                'kubepocket_node_cpu_capacity',       'Node CPU capacity (cores)',              labels=['node', 'cluster'])
+            node_cpu_alloc = GaugeMetricFamily(
+                'kubepocket_node_cpu_allocatable',    'Node CPU allocatable (cores)',           labels=['node', 'cluster'])
+            node_cpu_req = GaugeMetricFamily(
+                'kubepocket_node_cpu_requested',      'Node CPU requested by pods (cores)',     labels=['node', 'cluster'])
+            node_cpu_actual = GaugeMetricFamily(
+                'kubepocket_node_cpu_actual',         'Node CPU actual usage (cores)',          labels=['node', 'cluster'])
+            node_cpu_req_pct = GaugeMetricFamily(
+                'kubepocket_node_cpu_request_pct',    'Node CPU request % of allocatable',     labels=['node', 'cluster'])
+            node_cpu_act_pct = GaugeMetricFamily(
+                'kubepocket_node_cpu_actual_pct',     'Node CPU actual % of allocatable',      labels=['node', 'cluster'])
+            node_mem_cap = GaugeMetricFamily(
+                'kubepocket_node_mem_capacity_gib',   'Node memory capacity (GiB)',             labels=['node', 'cluster'])
+            node_mem_alloc = GaugeMetricFamily(
+                'kubepocket_node_mem_allocatable_gib', 'Node memory allocatable (GiB)',          labels=['node', 'cluster'])
+            node_mem_req = GaugeMetricFamily(
+                'kubepocket_node_mem_requested_gib',  'Node memory requested by pods (GiB)',   labels=['node', 'cluster'])
+            node_mem_actual = GaugeMetricFamily(
+                'kubepocket_node_mem_actual_gib',     'Node memory actual usage (GiB)',        labels=['node', 'cluster'])
+            node_mem_req_pct = GaugeMetricFamily(
+                'kubepocket_node_mem_request_pct',    'Node memory request % of allocatable',  labels=['node', 'cluster'])
+            node_mem_act_pct = GaugeMetricFamily(
+                'kubepocket_node_mem_actual_pct',     'Node memory actual % of allocatable',   labels=['node', 'cluster'])
+            node_pods_run = GaugeMetricFamily(
+                'kubepocket_node_pods_running',       'Number of pods on node',                labels=['node', 'cluster'])
+            node_pods_pct = GaugeMetricFamily(
+                'kubepocket_node_pods_pct',           'Pod count % of capacity',               labels=['node', 'cluster'])
+            node_ready = GaugeMetricFamily(
+                'kubepocket_node_ready',              'Node ready status (1=Ready)',            labels=['node', 'cluster'])
             pod_startup = GaugeMetricFamily('kubepocket_pod_startup_seconds',
                                             'Pod startup latency seconds (Pending->Running)', labels=['pod', 'namespace', 'cluster'])
             pod_event_count = GaugeMetricFamily('kubepocket_pod_event_count',            'Kubernetes event count per pod (last 24h)', labels=[
@@ -202,6 +232,35 @@ class KubePocketCollector:
                 cluster_waste_pct.add_metric(
                     [CLUSTER_NAME, 'memory'], summary.get('wasted_memory_pct', 0))
 
+            # Node metrikleri
+            try:
+                from collector.k8s_client import K8sClient
+                k8s = K8sClient()
+                node_data = k8s.collect_node_metrics()
+                for nd in node_data:
+                    nl = [nd['name'], CLUSTER_NAME]
+                    node_cpu_cap.add_metric(nl, nd['cpu_capacity'])
+                    node_cpu_alloc.add_metric(nl, nd['cpu_allocatable'])
+                    node_cpu_req.add_metric(nl, nd['cpu_requested'])
+                    node_cpu_req_pct.add_metric(nl, nd['cpu_request_pct'])
+                    node_mem_cap.add_metric(nl, nd['mem_capacity_gib'])
+                    node_mem_alloc.add_metric(nl, nd['mem_allocatable_gib'])
+                    node_mem_req.add_metric(nl, nd['mem_requested_gib'])
+                    node_mem_req_pct.add_metric(nl, nd['mem_request_pct'])
+                    node_pods_run.add_metric(nl, nd['pods_running'])
+                    node_pods_pct.add_metric(nl, nd['pods_pct'])
+                    node_ready.add_metric(nl, 1.0 if nd['ready'] else 0.0)
+                    if nd['cpu_actual'] is not None:
+                        node_cpu_actual.add_metric(nl, nd['cpu_actual'])
+                    if nd['cpu_actual_pct'] is not None:
+                        node_cpu_act_pct.add_metric(nl, nd['cpu_actual_pct'])
+                    if nd['mem_actual_gib'] is not None:
+                        node_mem_actual.add_metric(nl, nd['mem_actual_gib'])
+                    if nd['mem_actual_pct'] is not None:
+                        node_mem_act_pct.add_metric(nl, nd['mem_actual_pct'])
+            except Exception as e:
+                logger.warning(f"Node metrics error: {e}")
+
             since = datetime.utcnow() - timedelta(hours=24)
             kube_events = (
                 db.query(KubeEvent.pod_name, KubeEvent.namespace, KubeEvent.event_type,
@@ -236,6 +295,21 @@ class KubePocketCollector:
             yield pod_waste_cpu
             yield pod_waste_memory
             yield cluster_waste_pct
+            yield node_cpu_cap
+            yield node_cpu_alloc
+            yield node_cpu_req
+            yield node_cpu_actual
+            yield node_cpu_req_pct
+            yield node_cpu_act_pct
+            yield node_mem_cap
+            yield node_mem_alloc
+            yield node_mem_req
+            yield node_mem_actual
+            yield node_mem_req_pct
+            yield node_mem_act_pct
+            yield node_pods_run
+            yield node_pods_pct
+            yield node_ready
             yield pod_startup
             yield pod_event_count
             yield pod_cpu_actual

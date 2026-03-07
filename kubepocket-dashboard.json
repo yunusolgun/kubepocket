@@ -18,7 +18,7 @@
   "title": "KubePocket",
   "uid": "kubepocket-main",
   "schemaVersion": 36,
-  "version": 23,
+  "version": 29,
   "refresh": "30s",
   "templating": {
     "list": [
@@ -2932,6 +2932,863 @@
         "displayMode": "lcd",
         "showUnfilled": true
       }
+    },
+    {
+      "id": 1100,
+      "title": "\ud83d\udda5\ufe0f NODE METRICS",
+      "type": "text",
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 260
+      },
+      "options": {
+        "content": "## Node Kapasite & Kullan\u0131m",
+        "mode": "markdown"
+      }
+    },
+    {
+      "id": 1101,
+      "title": "Node Ready",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 263
+      },
+      "targets": [
+        {
+          "expr": "sum(kubepocket_node_ready)",
+          "refId": "A",
+          "instant": true,
+          "legendFormat": "{{node}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background"
+      }
+    },
+    {
+      "id": 1106,
+      "title": "\ud83d\udda5\ufe0f Node Detay Tablosu \u2014 s\u0131ralamak i\u00e7in s\u00fctun ba\u015fl\u0131\u011f\u0131na t\u0131kla",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 274
+      },
+      "targets": [
+        {
+          "expr": "kubepocket_node_ready",
+          "instant": true,
+          "refId": "A",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_cpu_allocatable",
+          "instant": true,
+          "refId": "B",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_cpu_requested",
+          "instant": true,
+          "refId": "C",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_cpu_actual",
+          "instant": true,
+          "refId": "D",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_cpu_request_pct",
+          "instant": true,
+          "refId": "E",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_cpu_actual_pct",
+          "instant": true,
+          "refId": "F",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_mem_allocatable_gib",
+          "instant": true,
+          "refId": "G",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_mem_requested_gib",
+          "instant": true,
+          "refId": "H",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_mem_actual_gib",
+          "instant": true,
+          "refId": "I",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_mem_request_pct",
+          "instant": true,
+          "refId": "J",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_mem_actual_pct",
+          "instant": true,
+          "refId": "K",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_pods_running",
+          "instant": true,
+          "refId": "L",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_pods_pct",
+          "instant": true,
+          "refId": "M",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "custom": {
+            "displayMode": "auto",
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Node"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              },
+              {
+                "id": "custom.pinned",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ready"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "\u2705 Ready",
+                        "color": "green"
+                      },
+                      "0": {
+                        "text": "\u274c NotReady",
+                        "color": "red"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU Req%"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "lcd-gauge"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 70
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU Act%"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "lcd-gauge"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 70
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mem Req%"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "lcd-gauge"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 70
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mem Act%"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "lcd-gauge"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 70
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pods%"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "lcd-gauge"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 70
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "CPU Req%",
+            "desc": true
+          }
+        ],
+        "footer": {
+          "show": true,
+          "reducer": [
+            "sum"
+          ],
+          "fields": [
+            "CPU Req",
+            "CPU Act",
+            "Mem Req (Gi)",
+            "Mem Act (Gi)",
+            "Pods"
+          ]
+        }
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "cluster": true,
+              "instance": true,
+              "job": true,
+              "namespace": true,
+              "pod": true,
+              "container": true,
+              "endpoint": true,
+              "service": true
+            },
+            "renameByName": {
+              "node": "Node",
+              "Value #A": "Ready",
+              "Value #B": "CPU Alloc",
+              "Value #C": "CPU Req",
+              "Value #D": "CPU Act",
+              "Value #E": "CPU Req%",
+              "Value #F": "CPU Act%",
+              "Value #G": "Mem Alloc (Gi)",
+              "Value #H": "Mem Req (Gi)",
+              "Value #I": "Mem Act (Gi)",
+              "Value #J": "Mem Req%",
+              "Value #K": "Mem Act%",
+              "Value #L": "Pods",
+              "Value #M": "Pods%"
+            }
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "Node",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "Node",
+                "Ready",
+                "CPU Alloc",
+                "CPU Req",
+                "CPU Act",
+                "CPU Req%",
+                "CPU Act%",
+                "Mem Alloc (Gi)",
+                "Mem Req (Gi)",
+                "Mem Act (Gi)",
+                "Mem Req%",
+                "Mem Act%",
+                "Pods",
+                "Pods%"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 1102,
+      "title": "CPU \u2014 Allocatable vs Requested vs Actual (cores)",
+      "type": "barchart",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 266
+      },
+      "targets": [
+        {
+          "expr": "kubepocket_node_cpu_allocatable",
+          "legendFormat": "Allocatable \u2014 {{node}}",
+          "instant": true,
+          "refId": "A",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_cpu_requested",
+          "legendFormat": "Requested \u2014 {{node}}",
+          "instant": true,
+          "refId": "B",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_cpu_actual",
+          "legendFormat": "Actual \u2014 {{node}}",
+          "instant": true,
+          "refId": "C",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 2,
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Allocatable"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 25
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Requested"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Actual"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 90
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "barWidth": 0.4,
+        "groupWidth": 0.8,
+        "fillOpacity": 80,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "stacking": "none",
+        "orientation": "vertical",
+        "xField": "Node"
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "cluster": true,
+              "instance": true,
+              "job": true,
+              "namespace": true,
+              "pod": true,
+              "container": true,
+              "endpoint": true,
+              "service": true
+            },
+            "renameByName": {
+              "node": "Node",
+              "Value #A": "Allocatable",
+              "Value #B": "Requested",
+              "Value #C": "Actual"
+            }
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "Node",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "Node",
+                "Allocatable",
+                "Requested",
+                "Actual"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 1103,
+      "title": "Memory \u2014 Allocatable vs Requested vs Actual (GiB)",
+      "type": "barchart",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 266
+      },
+      "targets": [
+        {
+          "expr": "kubepocket_node_mem_allocatable_gib",
+          "legendFormat": "Allocatable \u2014 {{node}}",
+          "instant": true,
+          "refId": "A",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_mem_requested_gib",
+          "legendFormat": "Requested \u2014 {{node}}",
+          "instant": true,
+          "refId": "B",
+          "format": "table"
+        },
+        {
+          "expr": "kubepocket_node_mem_actual_gib",
+          "legendFormat": "Actual \u2014 {{node}}",
+          "instant": true,
+          "refId": "C",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 2,
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Allocatable"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 25
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Requested"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Actual"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 90
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "barWidth": 0.4,
+        "groupWidth": 0.8,
+        "fillOpacity": 80,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "stacking": "none",
+        "orientation": "vertical",
+        "xField": "Node"
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "cluster": true,
+              "instance": true,
+              "job": true,
+              "namespace": true,
+              "pod": true,
+              "container": true,
+              "endpoint": true,
+              "service": true
+            },
+            "renameByName": {
+              "node": "Node",
+              "Value #A": "Allocatable",
+              "Value #B": "Requested",
+              "Value #C": "Actual"
+            }
+          }
+        },
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "Node",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "Node",
+                "Allocatable",
+                "Requested",
+                "Actual"
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }

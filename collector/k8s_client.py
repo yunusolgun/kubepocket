@@ -213,6 +213,96 @@ class K8sClient:
         except Exception:
             return {}
 
+    def collect_node_metrics(self):
+        """Node bazlı kapasite, allocatable ve pod dağılımı."""
+        try:
+            nodes = self.core_v1.list_node()
+            all_pods = self.core_v1.list_pod_for_all_namespaces()
+
+            # Pod -> node mapping
+            node_pods = {}
+            node_cpu_requested = {}
+            node_mem_requested = {}
+            for pod in all_pods.items:
+                node = pod.spec.node_name
+                if not node:
+                    continue
+                node_pods[node] = node_pods.get(node, 0) + 1
+                for container in pod.spec.containers:
+                    if container.resources and container.resources.requests:
+                        node_cpu_requested[node] = node_cpu_requested.get(node, 0) + \
+                            self.parse_cpu(
+                                container.resources.requests.get('cpu', '0'))
+                        node_mem_requested[node] = node_mem_requested.get(node, 0) + \
+                            self.parse_memory(
+                                container.resources.requests.get('memory', '0'))
+
+            results = []
+            for node in nodes.items:
+                name = node.metadata.name
+                cap = node.status.capacity
+                alloc = node.status.allocatable
+
+                cpu_capacity = self.parse_cpu(cap.get('cpu', '0'))
+                cpu_allocatable = self.parse_cpu(alloc.get('cpu', '0'))
+                mem_capacity = self.parse_memory(cap.get('memory', '0'))
+                mem_allocatable = self.parse_memory(alloc.get('memory', '0'))
+                pods_capacity = int(cap.get('pods', 110))
+                pods_running = node_pods.get(name, 0)
+                cpu_requested = round(node_cpu_requested.get(name, 0), 4)
+                mem_requested = round(node_mem_requested.get(name, 0), 4)
+
+                # Actual usage from Metrics Server
+                cpu_actual = None
+                mem_actual = None
+                try:
+                    node_metrics = self.metrics_api.get_cluster_custom_object(
+                        group='metrics.k8s.io',
+                        version='v1beta1',
+                        plural='nodes',
+                        name=name
+                    )
+                    cpu_actual = round(self.parse_cpu(
+                        node_metrics['usage']['cpu']), 4)
+                    mem_actual = round(self.parse_memory(
+                        node_metrics['usage']['memory']), 4)
+                except Exception:
+                    pass
+
+                # Conditions
+                conditions = {}
+                for cond in (node.status.conditions or []):
+                    conditions[cond.type] = cond.status
+
+                ready = conditions.get('Ready', 'Unknown') == 'True'
+
+                results.append({
+                    'name': name,
+                    'ready': ready,
+                    'cpu_capacity': cpu_capacity,
+                    'cpu_allocatable': cpu_allocatable,
+                    'cpu_requested': cpu_requested,
+                    'cpu_actual': cpu_actual,
+                    'cpu_request_pct': round(cpu_requested / cpu_allocatable * 100, 1) if cpu_allocatable > 0 else 0,
+                    'cpu_actual_pct': round(cpu_actual / cpu_allocatable * 100, 1) if cpu_actual and cpu_allocatable > 0 else None,
+                    'mem_capacity_gib': mem_capacity,
+                    'mem_allocatable_gib': mem_allocatable,
+                    'mem_requested_gib': mem_requested,
+                    'mem_actual_gib': mem_actual,
+                    'mem_request_pct': round(mem_requested / mem_allocatable * 100, 1) if mem_allocatable > 0 else 0,
+                    'mem_actual_pct': round(mem_actual / mem_allocatable * 100, 1) if mem_actual and mem_allocatable > 0 else None,
+                    'pods_running': pods_running,
+                    'pods_capacity': pods_capacity,
+                    'pods_pct': round(pods_running / pods_capacity * 100, 1) if pods_capacity > 0 else 0,
+                    'conditions': conditions,
+                })
+
+            return results
+
+        except Exception as e:
+            print(f"❌ Node metrics hatası: {e}")
+            return []
+
     def collect_all_metrics_with_usage(self):
         """collect_all_metrics() + Metrics Server'dan gerçek kullanım."""
         metrics = self.collect_all_metrics()

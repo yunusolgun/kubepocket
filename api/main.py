@@ -1,4 +1,7 @@
 # api/main.py
+from api.routes import metrics, alerts, clusters, apikeys, cost, events, nodes
+from api.auth import create_api_key
+from db.models import init_db, SessionLocal
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -6,8 +9,6 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from db.models import init_db, SessionLocal
-from api.auth import create_api_key
 
 app = FastAPI(
     title="KubePocket API",
@@ -15,7 +16,8 @@ app = FastAPI(
     version="4.0.0"
 )
 
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
 app.add_middleware(
     CORSMiddleware,
@@ -45,14 +47,13 @@ def on_startup():
         db.close()
 
 
-from api.routes import metrics, alerts, clusters, apikeys, cost, events
-
 app.include_router(metrics.router, prefix="/api/metrics", tags=["metrics"])
 app.include_router(alerts.router,  prefix="/api/alerts",  tags=["alerts"])
-app.include_router(clusters.router,prefix="/api/clusters",tags=["clusters"])
+app.include_router(clusters.router, prefix="/api/clusters", tags=["clusters"])
 app.include_router(apikeys.router, prefix="/api/keys",    tags=["api-keys"])
 app.include_router(cost.router,    prefix="/api/cost",    tags=["cost"])
 app.include_router(events.router,  prefix="/api/events",  tags=["events"])
+app.include_router(nodes.router,   prefix="/api/nodes",   tags=["nodes"])
 
 
 @app.get("/")
