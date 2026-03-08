@@ -136,7 +136,7 @@ fi
 # ── HELM REPOS ───────────────────────────────────────────────────
 echo "📡 Adding Helm repos..."
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
+helm repo update || echo "⚠️  Repo update failed, continuing with cached charts..."
 
 # ── MONITORING STACK ─────────────────────────────────────────────
 if [ "$EXISTING_STACK" = "true" ]; then

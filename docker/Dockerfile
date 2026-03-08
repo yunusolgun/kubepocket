@@ -21,6 +21,7 @@ COPY prometheus_exporter/ ./prometheus_exporter/
 COPY reporter/ ./reporter/
 COPY alembic/ ./alembic/
 COPY alembic.ini .
+COPY licensing/ ./licensing/
 
 RUN mkdir -p /var/log/kubepocket
 

@@ -14,6 +14,15 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 CLUSTER_NAME = os.getenv('CLUSTER_NAME', 'default')
+LICENSE_KEY = os.getenv('KUBEPOCKET_LICENSE_KEY', '')
+
+
+def _get_license():
+    try:
+        from licensing.license import verify_license
+        return verify_license(LICENSE_KEY)
+    except ImportError:
+        return None
 
 
 def collect_once(context=None):
@@ -22,6 +31,25 @@ def collect_once(context=None):
     print('='*50)
 
     init_db()
+
+    # ── License kontrolü ──────────────────────────────────────
+    license = _get_license()
+    if license is not None:
+        if not license.valid:
+            print(f"⚠️  License: {license.error}")
+            print("   Running in Free tier mode (3 namespace limit)")
+            from licensing.license import LicenseInfo
+            license = LicenseInfo(valid=True)  # community defaults
+        else:
+            tier_label = license.tier.upper()
+            ns_label = "unlimited" if license.is_unlimited_namespaces() else str(
+                license.namespace_limit)
+            print(
+                f"🔑 License: {tier_label} — {license.customer} (namespaces: {ns_label})")
+            if license.days_until_expiry() is not None and license.days_until_expiry() <= 30:
+                print(
+                    f"⚠️  License expires in {license.days_until_expiry()} days!")
+    # ──────────────────────────────────────────────────────────
 
     try:
         k8s = K8sClient(context=context)
@@ -42,6 +70,14 @@ def collect_once(context=None):
         if not metrics:
             print("No metrics collected!")
             return False
+
+        # Namespace limit kontrolü
+        if license is not None and not license.is_unlimited_namespaces():
+            if len(metrics) > license.namespace_limit:
+                print(f"⚠️  Namespace limit: {license.namespace_limit} (found {len(metrics)}). "
+                      f"Only first {license.namespace_limit} will be saved. "
+                      f"Upgrade to Pro for unlimited namespaces.")
+                metrics = metrics[:license.namespace_limit]
 
         saved = repo.save_metrics(cluster.id, metrics)
 
@@ -118,7 +154,8 @@ def collect_once(context=None):
             resolved = 0
             for alert in active_pvc_alerts:
                 # Hangi PVC'ye ait olduğunu bul
-                alert_pvc = next((n for n in pvc_names if n in alert.message), None)
+                alert_pvc = next(
+                    (n for n in pvc_names if n in alert.message), None)
                 if alert_pvc is None:
                     # PVC artık cluster'da yok — resolve et
                     alert.resolved = True
@@ -131,7 +168,8 @@ def collect_once(context=None):
             if resolved:
                 db.commit()
 
-            print(f"  PVC checks: {len(pvcs)} PVCs checked, {resolved} alerts resolved")
+            print(
+                f"  PVC checks: {len(pvcs)} PVCs checked, {resolved} alerts resolved")
         except Exception as e:
             print(f"  Warning: PVC alert check failed: {e}")
 

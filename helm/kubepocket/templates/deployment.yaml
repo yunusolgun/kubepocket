@@ -46,6 +46,8 @@ spec:
           value: {{ .Values.clusterName | default "default" }}
         - name: ALLOWED_ORIGINS
           value: {{ .Values.allowedOrigins | default "http://localhost:3000" }}
+        - name: KUBEPOCKET_LICENSE_KEY
+          value: {{ .Values.licenseKey | default "" | quote }}
 
         ports:
         - name: api

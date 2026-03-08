@@ -1,51 +1,52 @@
-# KubePocket — Kurulum Rehberi
+# KubePocket — Installation Guide
 
-## Gereksinimler
+## Requirements
 
-| Araç           | Versiyon |
-| -------------- | -------- |
-| Docker Desktop | 29+      |
-| Minikube       | v1.37+   |
-| Helm           | v3+      |
-| kubectl        | v1.28+   |
+| Tool           | Version |
+|----------------|---------|
+| Docker Desktop | 29+     |
+| Minikube       | v1.37+  |
+| Helm           | v3+     |
+| kubectl        | v1.28+  |
 
 ---
 
-## Sıfırdan Kurulum
+## Quick Install (Recommended)
 
-### 1 — Minikube başlat
+```bash
+./install.sh
+```
+
+The script handles everything automatically:
+- Docker image build
+- Prometheus + Grafana installation
+- KubePocket Helm installation
+- Grafana dashboard import
+
+---
+
+## Manual Installation (Step by Step)
+
+### 1 — Start Minikube
 
 ```bash
 minikube start --cpus=2 --memory=4096 --driver=docker
 ```
 
----
-
-### 2 — Image'ları hazırla
+### 2 — Build the image
 
 ```bash
-# Minikube'un Docker daemon'ını kullan
 eval $(minikube docker-env)
-
-# KubePocket image'ı build et
-cd /Users/yunusolgun/Desktop/STUDY/python-works/DS/kubepocket
 docker build -t kubepocket:local -f docker/Dockerfile .
-
-# PostgreSQL image'ını çek (internet yokken offline kullanım için)
-docker pull bitnami/postgresql:latest
 ```
 
----
-
-### 3 — Helm dependency güncelle
+### 3 — Update Helm dependencies
 
 ```bash
 helm dependency update ./helm/kubepocket
 ```
 
----
-
-### 4 — Prometheus + Grafana kur
+### 4 — Install Prometheus + Grafana
 
 ```bash
 helm install monitoring prometheus-community/kube-prometheus-stack \
@@ -53,20 +54,15 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
   --create-namespace \
   --set grafana.adminPassword=admin123 \
   --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
+
+kubectl wait --for=condition=ready pod \
+  -l app.kubernetes.io/name=prometheus \
+  -n monitoring --timeout=180s
 ```
 
-Pod'ların hazır olmasını bekle:
+### 5 — Install KubePocket
 
-```bash
-kubectl get pods -n monitoring -w
-# Hepsi Running olunca Ctrl+C
-```
-
----
-
-### 5 — KubePocket kur
-
-⚠️ Prometheus kurulmadan önce yapılırsa ServiceMonitor CRD hatası alırsın. Adım 4 tamamlanmadan bu adıma geçme.
+> ⚠️ Do not proceed before step 4 is complete — you will get a ServiceMonitor CRD error.
 
 ```bash
 helm install kubepocket ./helm/kubepocket \
@@ -79,44 +75,20 @@ helm install kubepocket ./helm/kubepocket \
   --set allowedOrigins=http://localhost:3000 \
   --set serviceMonitor.enabled=true \
   --set postgresql.auth.password=kubepocket123
+
+kubectl wait --for=condition=ready pod \
+  -l app.kubernetes.io/name=kubepocket \
+  -n kubepocket --timeout=120s
 ```
 
-Pod'ların hazır olmasını bekle:
-
-```bash
-kubectl get pods -n kubepocket -w
-# Her iki pod da Running olunca Ctrl+C
-```
-
-Beklenen çıktı:
-
-```
-kubepocket-xxxx           1/1     Running   0
-kubepocket-postgresql-0   1/1     Running   0
-```
-
----
-
-### 6 — API key'i al
+### 6 — Get the API key
 
 ```bash
 kubectl exec -n kubepocket deploy/kubepocket -- \
   cat /var/log/kubepocket/api.log | grep "Key:"
 ```
 
-Çıktı:
-
-```
-Key: kp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
-
-Bu key'i güvenli bir yere kaydet.
-
----
-
-### 7 — Port-forward'ları aç
-
-**3 ayrı terminal** aç:
+### 7 — Open port-forwards
 
 ```bash
 # Terminal 1 — KubePocket API
@@ -125,114 +97,160 @@ kubectl port-forward -n kubepocket svc/kubepocket 8000:8000
 # Terminal 2 — Grafana
 kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
 
-# Terminal 3 — Prometheus (isteğe bağlı)
+# Terminal 3 — Prometheus (optional)
 kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090
 ```
 
----
-
-### 8 — API testi
+### 8 — Import Grafana dashboard
 
 ```bash
-# Summary
-curl -s \
-  -H "X-API-Key: <key>" \
-  http://localhost:8000/api/metrics/summary | python3 -m json.tool
-
-# Göreceli maliyet
-curl -s \
-  -H "X-API-Key: <key>" \
-  http://localhost:8000/api/cost/relative | python3 -m json.tool
-
-# Waste tespiti
-curl -s \
-  -H "X-API-Key: <key>" \
-  http://localhost:8000/api/cost/waste | python3 -m json.tool
-
-# Swagger UI
-open http://localhost:8000/docs
+curl -s -u admin:admin123 \
+  -X POST http://localhost:3000/api/dashboards/import \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"dashboard\": $(cat kubepocket-dashboard.json),
+    \"overwrite\": true,
+    \"folderId\": 0
+  }"
 ```
 
+Or via Grafana UI: **Dashboards → Import → Upload JSON file** → `kubepocket-dashboard.json`
+
 ---
 
-### 9 — İlk veri topla
-
-Collector otomatik çalışır (5 dakikada bir). Manuel tetiklemek için:
+## Production Install
 
 ```bash
-kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.py
+MODE=production \
+  EXISTING_STACK=true \
+  MONITORING_NAMESPACE=observability \
+  IMAGE_REPOSITORY=your-registry/kubepocket \
+  IMAGE_TAG=3.0.0 \
+  CLUSTER_NAME=prod-eu-west \
+  GRAFANA_URL=http://grafana.internal \
+  GRAFANA_PASSWORD=yourpassword \
+  ./install.sh
 ```
 
+### install.sh Environment Variables
+
+| Variable               | Default                     | Description                                     |
+|------------------------|-----------------------------|-------------------------------------------------|
+| `MODE`                 | `local`                     | `local` or `production`                         |
+| `CLUSTER_NAME`         | `minikube-local`            | Cluster identifier                              |
+| `IMAGE_REPOSITORY`     | `kubepocket/kubepocket`     | Container image repository                      |
+| `IMAGE_TAG`            | `3.0.0`                     | Container image tag                             |
+| `EXISTING_STACK`       | `false`                     | Use an existing Prometheus/Grafana stack        |
+| `MONITORING_NAMESPACE` | `monitoring`                | Namespace of the monitoring stack               |
+| `GRAFANA_URL`          | `http://localhost:3000`     | Grafana base URL                                |
+| `GRAFANA_USER`         | `admin`                     | Grafana admin username                          |
+| `GRAFANA_PASSWORD`     | `admin123`                  | Grafana admin password                          |
+| `DASHBOARD_FILE`       | `kubepocket-dashboard.json` | Path to the dashboard JSON file                 |
+| `GRAFANA_IMPORT`       | `false`                     | Force dashboard import even with existing stack |
+| `ALLOWED_ORIGINS`      | `http://localhost:3000/*`   | CORS allowed origins                            |
+| `PG_PASSWORD`          | `kubepocket123`             | PostgreSQL password                             |
+
 ---
 
-### 10 — Grafana kurulumu
+## Licensing
 
-1. `http://localhost:3000` → kullanıcı: `admin`, şifre: `admin123`
-2. **Dashboards → Import → Upload JSON file**
-3. `kubepocket-dashboard.json` dosyasını seç
-4. Datasource olarak **Prometheus** seç
-5. **Import**
+### Tier Comparison
 
----
+| Feature           | Free      | Pro        |
+|-------------------|-----------|------------|
+| Clusters          | 1         | Unlimited  |
+| Namespaces        | 4         | Unlimited  |
+| Retention         | 30 days   | 365 days   |
+| Metrics           | ✅        | ✅         |
+| Alerts            | ✅        | ✅         |
+| Anomaly Detection | ✅        | ✅         |
+| Forecast          | ✅        | ✅         |
 
-## Test Pod'larını Çalıştır
 
-Farklı senaryoları simüle eden pod'lar:
+
+
+### Applying a license key
 
 ```bash
-kubectl apply -f testpods/01-healthy-pod.yaml       # Normal pod
-kubectl apply -f testpods/02-high-cpu-pod.yaml      # CPU limitini zorlayan
-kubectl apply -f testpods/03-oom-pod.yaml           # OOMKilled
-kubectl apply -f testpods/04-crash-loop-pod.yaml    # CrashLoopBackOff
-kubectl apply -f testpods/05-pending-pod.yaml       # Pending (schedule edilemez)
-kubectl apply -f testpods/06-high-memory-pod.yaml   # Yüksek memory
-kubectl apply -f testpods/07-wrong-image-pod.yaml   # ImagePullBackOff
-kubectl apply -f testpods/08-anomaly-cpu-pod.yaml   # Anomaly tetikleyen
-kubectl apply -f testpods/09-liveness-fail-pod.yaml # Liveness probe fail
-kubectl apply -f testpods/10-resource-hungry-pod.yaml # Yüksek CPU + memory
+helm upgrade kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --reuse-values \
+  --set licenseKey="kp_..."
 ```
 
-Durumlarını kontrol et:
+### Checking license status
 
 ```bash
+curl -s http://localhost:8000/api/license | python3 -m json.tool
+```
+
+### Generating a license key (internal use only)
+
+```bash
+python3 licensing/generate_license.py \
+  --tier pro \
+  --customer "Acme Corp" \
+  --email admin@acme.com \
+  --months 12 \
+  --private-key private_key.pem
+```
+
+> ⚠️ `private_key.pem` and `generate_license.py` are excluded from Docker images via `.dockerignore`.
+
+---
+
+## Test Pods
+
+Simulate different failure scenarios:
+
+```bash
+kubectl apply -f testpods/01-healthy-pod.yaml         # Normal pod
+kubectl apply -f testpods/02-high-cpu-pod.yaml        # CPU limit pressure
+kubectl apply -f testpods/03-oom-pod.yaml             # OOMKilled
+kubectl apply -f testpods/04-crash-loop-pod.yaml      # CrashLoopBackOff
+kubectl apply -f testpods/05-pending-pod.yaml         # Pending (unschedulable)
+kubectl apply -f testpods/06-high-memory-pod.yaml     # High memory usage
+kubectl apply -f testpods/07-wrong-image-pod.yaml     # ImagePullBackOff
+kubectl apply -f testpods/08-anomaly-cpu-pod.yaml     # Triggers anomaly detection
+kubectl apply -f testpods/09-liveness-fail-pod.yaml   # Liveness probe failure
+kubectl apply -f testpods/10-resource-hungry-pod.yaml # High CPU + memory
+
 kubectl get pods -n default
 ```
 
 ---
 
-## Güncelleme (Helm Upgrade)
-
-Kod değişikliği sonrası:
+## Upgrading
 
 ```bash
 eval $(minikube docker-env)
-docker build -t kubepocket:local -f docker/Dockerfile .
+docker build --no-cache -t kubepocket:local -f docker/Dockerfile .
 kubectl rollout restart deployment/kubepocket -n kubepocket
 kubectl rollout status deployment/kubepocket -n kubepocket
 ```
 
 ---
 
-## Yararlı Komutlar
+## Useful Commands
 
 ```bash
-# Pod logları
+# Pod logs
 kubectl logs -n kubepocket deploy/kubepocket
 kubectl exec -n kubepocket deploy/kubepocket -- tail -f /var/log/kubepocket/api.log
 kubectl exec -n kubepocket deploy/kubepocket -- tail -f /var/log/kubepocket/collector.log
 
-# PostgreSQL'e bağlan
+# Trigger collector manually
+kubectl exec -n kubepocket deploy/kubepocket -- python collector/run_collector.py
+
+# Connect to PostgreSQL
 kubectl exec -n kubepocket kubepocket-postgresql-0 -- \
   env PGPASSWORD=kubepocket123 psql -U kubepocket -d kubepocket -c "\dt"
 
-# Tüm podları listele
-kubectl get pods -A
-
-# Helm release durumu
+# Helm status
 helm status kubepocket -n kubepocket
 helm status monitoring -n monitoring
 
-# Her şeyi sil
+# Remove everything
 helm uninstall kubepocket -n kubepocket
 helm uninstall monitoring -n monitoring
 minikube delete
@@ -240,117 +258,44 @@ minikube delete
 
 ---
 
-## Servisler
+## Services
 
-| Servis              | URL                         | Açıklama                   |
-| ------------------- | --------------------------- | -------------------------- |
-| KubePocket API      | http://localhost:8000       | REST API                   |
-| Swagger UI          | http://localhost:8000/docs  | API dokümantasyonu         |
-| Grafana             | http://localhost:3000       | Dashboard (admin/admin123) |
-| Prometheus          | http://localhost:9090       | Metrikler                  |
-| Prometheus Exporter | (cluster içi) :8001/metrics | Raw metrikler              |
-
----
-
-## Mimari
-
-```
-┌─────────────────────────────────────────────┐
-│              kubepocket pod                  │
-│                                             │
-│  collector → PostgreSQL ← API (8000)        │
-│                  ↑                          │
-│  stats_daemon ───┘                          │
-│                                             │
-│  exporter (8001) ← Prometheus ← Grafana     │
-└─────────────────────────────────────────────┘
-```
+| Service             | URL                          | Description                |
+|---------------------|------------------------------|----------------------------|
+| KubePocket API      | http://localhost:8000        | REST API                   |
+| Swagger UI          | http://localhost:8000/docs   | API documentation          |
+| Grafana             | http://localhost:3000        | Dashboard (admin/admin123) |
+| Prometheus          | http://localhost:9090        | Metrics                    |
+| Prometheus Exporter | (in-cluster) :8001/metrics   | Raw metrics                |
 
 ---
 
-## Sorun Giderme
+## Troubleshooting
 
-**PostgreSQL bağlanamıyor:**
-
+**Cannot connect to PostgreSQL:**
 ```bash
 kubectl get pods -n kubepocket
 kubectl logs -n kubepocket kubepocket-postgresql-0
 ```
 
-**API key çalışmıyor (pod restart sonrası):**
-
+**API key not working after pod restart:**
 ```bash
-# DB'deki aktif key'i kontrol et
 kubectl exec -n kubepocket kubepocket-postgresql-0 -- \
   psql -U kubepocket -d kubepocket -c \
   "SELECT name, is_active, created_at FROM api_keys;"
 ```
 
-**ServiceMonitor görünmüyor:**
-
+**ServiceMonitor not visible:**
 ```bash
 kubectl get servicemonitor -n kubepocket
-# Label kontrolü
 kubectl get servicemonitor kubepocket -n kubepocket -o yaml | grep "release:"
 ```
 
-**Collector hata veriyor:**
-
+**Collector errors:**
 ```bash
 kubectl exec -n kubepocket deploy/kubepocket -- cat /var/log/kubepocket/collector.log
 ```
 
-# --------------------------------------------------
+**Duplicate series in Grafana after rollout:**
 
-# kubepocket kurulum. - ozet
-
-### 1 — Minikube başlat
-
-```bash
-minikube start --cpus=2 --memory=4096 --driver=docker
-```
-
-# 1. Metrics Server etkinleştir
-
-minikube addons enable metrics-server
-
-# 2. Docker env ayarla
-
-eval $(minikube docker-env)
-
-# 3. Image build et
-
-docker build -t kubepocket:local -f docker/Dockerfile .
-
-# 4. Prometheus + Grafana kur
-
-helm install monitoring prometheus-community/kube-prometheus-stack \
- --namespace monitoring \
- --create-namespace \
- --set grafana.adminPassword=admin123 \
- --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
-
-# 5. CRD'ler hazır olsun
-
-kubectl wait --for=condition=ready pod \
- -l app.kubernetes.io/name=prometheus \
- -n monitoring --timeout=120s
-
-# 6. KubePocket kur
-
-helm install kubepocket ./helm/kubepocket \
- --namespace kubepocket \
- --create-namespace \
- --set image.repository=kubepocket \
- --set image.tag=local \
- --set image.pullPolicy=Never \
- --set clusterName=minikube-local \
- --set allowedOrigins=http://localhost:3000 \
- --set serviceMonitor.enabled=true \
- --set postgresql.auth.password=kubepocket123
-
-# 7. Pod'ların hazır olmasını bekle
-
-kubectl wait --for=condition=ready pod \
- -l app.kubernetes.io/name=kubepocket \
- -n kubepocket --timeout=120s
+Stale series from old pods may appear for a few minutes after a deployment rollout. Values remain correct because `avg by` aggregation is active — only extra legend entries are shown briefly and disappear on their own.

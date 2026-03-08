@@ -1,6 +1,14 @@
 # helm/kubepocket/values.yaml
 # KubePocket v3.0.0
 
+# =============================================
+# License Key
+# Boş bırakılırsa Free tier (3 namespace, 1 cluster)
+# Satın alınan key buraya veya KUBEPOCKET_LICENSE_KEY
+# environment variable olarak geçilebilir.
+# =============================================
+licenseKey: ""
+
 replicaCount: 1
 
 image:

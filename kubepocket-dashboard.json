@@ -18,7 +18,7 @@
   "title": "KubePocket",
   "uid": "kubepocket-main",
   "schemaVersion": 36,
-  "version": 40,
+  "version": 53,
   "refresh": "30s",
   "templating": {
     "list": [
@@ -28,7 +28,7 @@
         "type": "query",
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "prometheus"
         },
         "query": "label_values(kubepocket_namespace_cpu_cores, exported_namespace)",
         "includeAll": true,
@@ -77,7 +77,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -87,7 +87,7 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_namespace_cpu_cores{exported_namespace=~\"$namespace\"}",
+          "expr": "avg by (exported_namespace, cluster) (kubepocket_namespace_cpu_cores{exported_namespace=~\"$namespace\"})",
           "legendFormat": "{{exported_namespace}}",
           "refId": "A"
         }
@@ -99,6 +99,12 @@
             "mode": "palette-classic"
           }
         }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       }
     },
     {
@@ -107,7 +113,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -117,7 +123,7 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_namespace_memory_gib{exported_namespace=~\"$namespace\"}",
+          "expr": "avg by (exported_namespace, cluster) (kubepocket_namespace_memory_gib{exported_namespace=~\"$namespace\"})",
           "legendFormat": "{{exported_namespace}}",
           "refId": "A"
         }
@@ -129,6 +135,12 @@
             "mode": "palette-classic"
           }
         }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       }
     },
     {
@@ -137,7 +149,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -147,7 +159,7 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_namespace_restarts_total{exported_namespace=~\"$namespace\"}",
+          "expr": "avg by (exported_namespace, cluster) (kubepocket_namespace_restarts_total{exported_namespace=~\"$namespace\"})",
           "legendFormat": "{{exported_namespace}}",
           "refId": "A"
         }
@@ -159,6 +171,12 @@
             "mode": "palette-classic"
           }
         }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       }
     },
     {
@@ -167,7 +185,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -177,7 +195,7 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_anomaly_score{exported_namespace=~\"$namespace\"}",
+          "expr": "avg by (exported_namespace, cluster) (kubepocket_anomaly_score{exported_namespace=~\"$namespace\"})",
           "legendFormat": "{{exported_namespace}}",
           "refId": "A"
         }
@@ -205,6 +223,12 @@
             ]
           }
         }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       }
     },
     {
@@ -228,7 +252,7 @@
       "type": "piechart",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -238,9 +262,8 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_namespace_cost_pct{exported_namespace=~\"$namespace\"}",
+          "expr": "avg by (exported_namespace, cluster) (kubepocket_namespace_cost_pct{exported_namespace=~\"$namespace\"})",
           "legendFormat": "{{exported_namespace}}",
-          "instant": true,
           "refId": "A"
         }
       ],
@@ -273,7 +296,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -283,9 +306,8 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_namespace_cpu_pct{exported_namespace=~\"$namespace\"}",
+          "expr": "avg by (exported_namespace, cluster) (kubepocket_namespace_cpu_pct{exported_namespace=~\"$namespace\"})",
           "legendFormat": "{{exported_namespace}}",
-          "instant": true,
           "refId": "A"
         }
       ],
@@ -332,7 +354,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -342,9 +364,8 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_namespace_memory_pct{exported_namespace=~\"$namespace\"}",
+          "expr": "avg by (exported_namespace, cluster) (kubepocket_namespace_memory_pct{exported_namespace=~\"$namespace\"})",
           "legendFormat": "{{exported_namespace}}",
-          "instant": true,
           "refId": "A"
         }
       ],
@@ -391,7 +412,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -401,7 +422,7 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_namespace_cost_pct{exported_namespace=~\"$namespace\"}",
+          "expr": "avg by (exported_namespace, cluster) (kubepocket_namespace_cost_pct{exported_namespace=~\"$namespace\"})",
           "legendFormat": "{{exported_namespace}}",
           "refId": "A"
         }
@@ -414,6 +435,12 @@
           "color": {
             "mode": "palette-classic"
           }
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
         }
       }
     },
@@ -438,7 +465,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 6,
@@ -448,7 +475,7 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_cluster_waste_pct",
+          "expr": "avg by (resource, cluster) (kubepocket_cluster_waste_pct)",
           "legendFormat": "{{resource}} waste",
           "instant": true,
           "refId": "A"
@@ -497,7 +524,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 6,
@@ -507,7 +534,7 @@
       },
       "targets": [
         {
-          "expr": "count(kubepocket_pod_waste_score > 0)",
+          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (count(kubepocket_pod_waste_score > 0))",
           "legendFormat": "Waste Pods",
           "instant": true,
           "refId": "A"
@@ -553,7 +580,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 6,
@@ -563,7 +590,7 @@
       },
       "targets": [
         {
-          "expr": "sum(kubepocket_pod_waste_cpu_cores)",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (sum(kubepocket_pod_waste_cpu_cores))",
           "legendFormat": "Wasted CPU",
           "instant": true,
           "refId": "A"
@@ -609,7 +636,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 12,
@@ -619,7 +646,7 @@
       },
       "targets": [
         {
-          "expr": "topk($topk, kubepocket_pod_waste_score{exported_namespace=~\"$namespace\"})",
+          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (topk($topk, kubepocket_pod_waste_score{exported_namespace=~\"$namespace\"}))",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
@@ -668,7 +695,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 12,
@@ -678,8 +705,8 @@
       },
       "targets": [
         {
-          "expr": "topk($topk, kubepocket_pod_waste_cpu_cores{exported_namespace=~\"$namespace\"})",
-          "legendFormat": "{{exported_pod}}",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_waste_cpu_cores{exported_namespace=~\"$namespace\"}))",
+          "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
         }
@@ -707,7 +734,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 12,
@@ -717,8 +744,8 @@
       },
       "targets": [
         {
-          "expr": "topk($topk, kubepocket_pod_waste_memory_gib{exported_namespace=~\"$namespace\"})",
-          "legendFormat": "{{exported_pod}}",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_waste_memory_gib{exported_namespace=~\"$namespace\"}))",
+          "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
         }
@@ -746,7 +773,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -756,7 +783,7 @@
       },
       "targets": [
         {
-          "expr": "topk($topk, kubepocket_pod_waste_score{exported_namespace=~\"$namespace\"})",
+          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (topk($topk, kubepocket_pod_waste_score{exported_namespace=~\"$namespace\"}))",
           "legendFormat": "{{exported_pod}} ({{exported_namespace}})",
           "refId": "A"
         }
@@ -769,6 +796,12 @@
           "color": {
             "mode": "palette-classic"
           }
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
         }
       }
     },
@@ -793,7 +826,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -803,7 +836,7 @@
       },
       "targets": [
         {
-          "expr": "topk($topk, kubepocket_pod_anomaly_score{exported_namespace=~\"$namespace\"})",
+          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (topk($topk, kubepocket_pod_anomaly_score{exported_namespace=~\"$namespace\"}))",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
@@ -852,7 +885,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -862,8 +895,8 @@
       },
       "targets": [
         {
-          "expr": "topk($topk, kubepocket_pod_restart_anomaly{exported_namespace=~\"$namespace\"})",
-          "legendFormat": "{{exported_pod}}",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_restart_anomaly{exported_namespace=~\"$namespace\"}))",
+          "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
         }
@@ -911,7 +944,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -921,8 +954,8 @@
       },
       "targets": [
         {
-          "expr": "topk($topk, kubepocket_pod_cpu_anomaly{exported_namespace=~\"$namespace\"})",
-          "legendFormat": "{{exported_pod}}",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_cpu_anomaly{exported_namespace=~\"$namespace\"}))",
+          "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
         }
@@ -985,7 +1018,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -995,7 +1028,7 @@
       },
       "targets": [
         {
-          "expr": "topk($topk, kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"}))",
           "legendFormat": "{{exported_pod}} ({{exported_namespace}})",
           "refId": "A"
         }
@@ -1007,6 +1040,12 @@
             "mode": "palette-classic"
           }
         }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       }
     },
     {
@@ -1015,7 +1054,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -1025,7 +1064,7 @@
       },
       "targets": [
         {
-          "expr": "topk($topk, kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\"}))",
           "legendFormat": "{{exported_pod}} ({{exported_namespace}})",
           "refId": "A"
         }
@@ -1037,6 +1076,12 @@
             "mode": "palette-classic"
           }
         }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       }
     },
     {
@@ -1045,7 +1090,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -1055,8 +1100,8 @@
       },
       "targets": [
         {
-          "expr": "topk($topk, kubepocket_pod_restarts_total{exported_namespace=~\"$namespace\"})",
-          "legendFormat": "{{exported_pod}}",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_restarts_total{exported_namespace=~\"$namespace\"}))",
+          "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
         }
@@ -1101,7 +1146,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -1111,8 +1156,8 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_pod_running{exported_namespace=~\"$namespace\"}",
-          "legendFormat": "{{exported_pod}}",
+          "expr": "avg by (exported_namespace, exported_pod, cluster, status) (kubepocket_pod_running{exported_namespace=~\"$namespace\"})",
+          "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
         }
@@ -1180,7 +1225,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -1190,9 +1235,8 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_namespace_cpu_cores{exported_namespace=~\"$namespace\"}",
+          "expr": "avg by (exported_namespace, cluster) (kubepocket_namespace_cpu_cores{exported_namespace=~\"$namespace\"})",
           "legendFormat": "{{exported_namespace}}",
-          "instant": true,
           "refId": "A"
         }
       ],
@@ -1219,7 +1263,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -1229,9 +1273,8 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_namespace_memory_gib{exported_namespace=~\"$namespace\"}",
+          "expr": "avg by (exported_namespace, cluster) (kubepocket_namespace_memory_gib{exported_namespace=~\"$namespace\"})",
           "legendFormat": "{{exported_namespace}}",
-          "instant": true,
           "refId": "A"
         }
       ],
@@ -1258,7 +1301,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 4,
@@ -1336,7 +1379,7 @@
       "type": "table",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 12,
@@ -1346,8 +1389,8 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_pod_waste_score{exported_namespace=~\"$namespace\"}",
-          "legendFormat": "{{exported_pod}}|{{exported_namespace}}|{{recommendation}}",
+          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (kubepocket_pod_waste_score{exported_namespace=~\"$namespace\"})",
+          "legendFormat": "",
           "instant": true,
           "refId": "A",
           "format": "table"
@@ -1482,10 +1525,10 @@
               "job": true
             },
             "renameByName": {
-              "exported_pod": "Pod",
               "exported_namespace": "Namespace",
               "recommendation": "Recommendation",
-              "Value": "Waste Score"
+              "Value": "Waste Score",
+              "exported_pod": "Pod"
             }
           }
         }
@@ -1497,7 +1540,7 @@
       "type": "table",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 12,
@@ -1507,7 +1550,7 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_pod_anomaly_score{exported_namespace=~\"$namespace\"} > 30",
+          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (kubepocket_pod_anomaly_score{exported_namespace=~\"$namespace\"} > 30)",
           "legendFormat": "",
           "instant": true,
           "refId": "A",
@@ -1643,10 +1686,10 @@
               "job": true
             },
             "renameByName": {
-              "exported_pod": "Pod",
               "exported_namespace": "Namespace",
               "recommendation": "Recommendation",
-              "Value": "Anomaly Score"
+              "Value": "Anomaly Score",
+              "exported_pod": "Pod"
             }
           }
         }
@@ -1673,7 +1716,7 @@
       "type": "piechart",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -1683,7 +1726,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (event_type) (kubepocket_pod_event_count{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_pod, exported_namespace, event_type, cluster) (kubepocket_pod_event_count{exported_namespace=~\"$namespace\"})",
           "legendFormat": "{{event_type}}",
           "instant": true,
           "refId": "A"
@@ -1703,7 +1746,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -1713,7 +1756,7 @@
       },
       "targets": [
         {
-          "expr": "topk(10, sum by (exported_pod, exported_namespace) (kubepocket_pod_event_count{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_pod, exported_namespace, event_type, cluster) (topk(10, avg by (exported_pod, exported_namespace, event_type, cluster) (kubepocket_pod_event_count{exported_namespace=~\"$namespace\"})))",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
@@ -1759,7 +1802,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -1769,8 +1812,8 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_pod_event_count{event_type=\"CrashLoopBackOff\", exported_namespace=~\"$namespace\"}",
-          "legendFormat": "{{exported_pod}}",
+          "expr": "avg by (exported_pod, exported_namespace, event_type, cluster) (kubepocket_pod_event_count{event_type=\"CrashLoopBackOff\", exported_namespace=~\"$namespace\"})",
+          "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "refId": "A"
         }
       ],
@@ -1783,6 +1826,12 @@
             "lineWidth": 2
           }
         }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       }
     },
     {
@@ -1791,7 +1840,7 @@
       "type": "table",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 12,
@@ -1801,7 +1850,7 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_pod_event_count{exported_namespace=~\"$namespace\"} > 0",
+          "expr": "avg by (exported_pod, exported_namespace, event_type, cluster) (kubepocket_pod_event_count{exported_namespace=~\"$namespace\"} > 0)",
           "legendFormat": "",
           "instant": true,
           "refId": "A",
@@ -1969,7 +2018,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 6,
@@ -1979,7 +2028,7 @@
       },
       "targets": [
         {
-          "expr": "avg(kubepocket_pod_cpu_efficiency_pct{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (avg(kubepocket_pod_cpu_efficiency_pct{exported_namespace=~\"$namespace\"}))",
           "refId": "A",
           "instant": true
         }
@@ -2026,7 +2075,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 6,
@@ -2036,7 +2085,7 @@
       },
       "targets": [
         {
-          "expr": "avg(kubepocket_pod_memory_efficiency_pct{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (avg(kubepocket_pod_memory_efficiency_pct{exported_namespace=~\"$namespace\"}))",
           "refId": "A",
           "instant": true
         }
@@ -2083,7 +2132,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 6,
@@ -2093,7 +2142,7 @@
       },
       "targets": [
         {
-          "expr": "sum(kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"}) - sum(kubepocket_pod_cpu_actual_cores{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (sum(kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"}) - sum(kubepocket_pod_cpu_actual_cores{exported_namespace=~\"$namespace\"}))",
           "refId": "A",
           "instant": true
         }
@@ -2139,7 +2188,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 6,
@@ -2149,7 +2198,7 @@
       },
       "targets": [
         {
-          "expr": "sum(kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\"}) - sum(kubepocket_pod_memory_actual_gib{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (sum(kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\"}) - sum(kubepocket_pod_memory_actual_gib{exported_namespace=~\"$namespace\"}))",
           "refId": "A",
           "instant": true
         }
@@ -2195,7 +2244,7 @@
       "type": "barchart",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 14,
@@ -2205,14 +2254,14 @@
       },
       "targets": [
         {
-          "expr": "topk(10, kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk(10, kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"}))",
           "legendFormat": "{{exported_pod}}",
           "instant": true,
           "refId": "A",
           "format": "table"
         },
         {
-          "expr": "topk(10, kubepocket_pod_cpu_actual_cores{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk(10, kubepocket_pod_cpu_actual_cores{exported_namespace=~\"$namespace\"}))",
           "legendFormat": "{{exported_pod}}",
           "instant": true,
           "refId": "B",
@@ -2360,7 +2409,7 @@
       "type": "barchart",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 14,
@@ -2370,14 +2419,14 @@
       },
       "targets": [
         {
-          "expr": "topk(10, kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk(10, kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\"}))",
           "legendFormat": "{{exported_pod}}",
           "instant": true,
           "refId": "A",
           "format": "table"
         },
         {
-          "expr": "topk(10, kubepocket_pod_memory_actual_gib{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk(10, kubepocket_pod_memory_actual_gib{exported_namespace=~\"$namespace\"}))",
           "legendFormat": "{{exported_pod}}",
           "instant": true,
           "refId": "B",
@@ -2525,7 +2574,7 @@
       "type": "table",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 12,
@@ -2535,13 +2584,13 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_pod_cpu_efficiency_pct{exported_namespace=~\"$namespace\"}",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (kubepocket_pod_cpu_efficiency_pct{exported_namespace=~\"$namespace\"})",
           "instant": true,
           "refId": "A",
           "format": "table"
         },
         {
-          "expr": "kubepocket_pod_memory_efficiency_pct{exported_namespace=~\"$namespace\"}",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (kubepocket_pod_memory_efficiency_pct{exported_namespace=~\"$namespace\"})",
           "instant": true,
           "refId": "B",
           "format": "table"
@@ -2717,7 +2766,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 3,
@@ -2727,7 +2776,7 @@
       },
       "targets": [
         {
-          "expr": "sum(kubepocket_node_ready)",
+          "expr": "avg by (node, cluster) (sum(kubepocket_node_ready))",
           "refId": "A",
           "instant": true,
           "legendFormat": "{{node}}"
@@ -2768,7 +2817,7 @@
       "type": "table",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -2778,79 +2827,79 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_node_ready",
+          "expr": "avg by (node, cluster) (kubepocket_node_ready)",
           "instant": true,
           "refId": "A",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_cpu_allocatable",
+          "expr": "avg by (node, cluster) (kubepocket_node_cpu_allocatable)",
           "instant": true,
           "refId": "B",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_cpu_requested",
+          "expr": "avg by (node, cluster) (kubepocket_node_cpu_requested)",
           "instant": true,
           "refId": "C",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_cpu_actual",
+          "expr": "avg by (node, cluster) (kubepocket_node_cpu_actual)",
           "instant": true,
           "refId": "D",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_cpu_request_pct",
+          "expr": "avg by (node, cluster) (kubepocket_node_cpu_request_pct)",
           "instant": true,
           "refId": "E",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_cpu_actual_pct",
+          "expr": "avg by (node, cluster) (kubepocket_node_cpu_actual_pct)",
           "instant": true,
           "refId": "F",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_mem_allocatable_gib",
+          "expr": "avg by (node, cluster) (kubepocket_node_mem_allocatable_gib)",
           "instant": true,
           "refId": "G",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_mem_requested_gib",
+          "expr": "avg by (node, cluster) (kubepocket_node_mem_requested_gib)",
           "instant": true,
           "refId": "H",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_mem_actual_gib",
+          "expr": "avg by (node, cluster) (kubepocket_node_mem_actual_gib)",
           "instant": true,
           "refId": "I",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_mem_request_pct",
+          "expr": "avg by (node, cluster) (kubepocket_node_mem_request_pct)",
           "instant": true,
           "refId": "J",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_mem_actual_pct",
+          "expr": "avg by (node, cluster) (kubepocket_node_mem_actual_pct)",
           "instant": true,
           "refId": "K",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_pods_running",
+          "expr": "avg by (node, cluster) (kubepocket_node_pods_running)",
           "instant": true,
           "refId": "L",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_pods_pct",
+          "expr": "avg by (node, cluster) (kubepocket_node_pods_pct)",
           "instant": true,
           "refId": "M",
           "format": "table"
@@ -3225,7 +3274,7 @@
       "type": "barchart",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -3235,21 +3284,21 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_node_cpu_allocatable",
+          "expr": "avg by (node, cluster) (kubepocket_node_cpu_allocatable)",
           "legendFormat": "Allocatable \u2014 {{node}}",
           "instant": true,
           "refId": "A",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_cpu_requested",
+          "expr": "avg by (node, cluster) (kubepocket_node_cpu_requested)",
           "legendFormat": "Requested \u2014 {{node}}",
           "instant": true,
           "refId": "B",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_cpu_actual",
+          "expr": "avg by (node, cluster) (kubepocket_node_cpu_actual)",
           "legendFormat": "Actual \u2014 {{node}}",
           "instant": true,
           "refId": "C",
@@ -3392,7 +3441,7 @@
       "type": "barchart",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -3402,21 +3451,21 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_node_mem_allocatable_gib",
+          "expr": "avg by (node, cluster) (kubepocket_node_mem_allocatable_gib)",
           "legendFormat": "Allocatable \u2014 {{node}}",
           "instant": true,
           "refId": "A",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_mem_requested_gib",
+          "expr": "avg by (node, cluster) (kubepocket_node_mem_requested_gib)",
           "legendFormat": "Requested \u2014 {{node}}",
           "instant": true,
           "refId": "B",
           "format": "table"
         },
         {
-          "expr": "kubepocket_node_mem_actual_gib",
+          "expr": "avg by (node, cluster) (kubepocket_node_mem_actual_gib)",
           "legendFormat": "Actual \u2014 {{node}}",
           "instant": true,
           "refId": "C",
@@ -3574,7 +3623,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 4,
@@ -3584,7 +3633,7 @@
       },
       "targets": [
         {
-          "expr": "sum(kubepocket_pvc_capacity_gib)",
+          "expr": "avg by (pvc, namespace, cluster, storageclass) (sum(kubepocket_pvc_capacity_gib))",
           "refId": "A",
           "instant": true
         }
@@ -3622,7 +3671,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 4,
@@ -3632,7 +3681,7 @@
       },
       "targets": [
         {
-          "expr": "sum(kubepocket_pvc_bound)",
+          "expr": "avg by (pvc, namespace, cluster, storageclass) (sum(kubepocket_pvc_bound))",
           "refId": "A",
           "instant": true
         }
@@ -3669,7 +3718,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 4,
@@ -3679,7 +3728,7 @@
       },
       "targets": [
         {
-          "expr": "count(kubepocket_pvc_bound) - sum(kubepocket_pvc_bound)",
+          "expr": "avg by (pvc, namespace, cluster, storageclass) (count(kubepocket_pvc_bound) - sum(kubepocket_pvc_bound))",
           "refId": "A",
           "instant": true
         }
@@ -3720,7 +3769,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 4,
@@ -3730,7 +3779,7 @@
       },
       "targets": [
         {
-          "expr": "sum(kubepocket_pvc_requested_gib)",
+          "expr": "avg by (pvc, namespace, cluster, storageclass) (sum(kubepocket_pvc_requested_gib))",
           "refId": "A",
           "instant": true
         }
@@ -3768,7 +3817,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -3778,7 +3827,7 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_pvc_capacity_gib",
+          "expr": "avg by (pvc, namespace, cluster, storageclass) (kubepocket_pvc_capacity_gib)",
           "legendFormat": "{{pvc}} / {{exported_namespace}}",
           "refId": "A",
           "instant": true
@@ -3823,7 +3872,7 @@
       "type": "table",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -3833,19 +3882,19 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_pvc_bound",
+          "expr": "avg by (pvc, namespace, cluster, storageclass) (kubepocket_pvc_bound)",
           "instant": true,
           "refId": "A",
           "format": "table"
         },
         {
-          "expr": "kubepocket_pvc_capacity_gib",
+          "expr": "avg by (pvc, namespace, cluster, storageclass) (kubepocket_pvc_capacity_gib)",
           "instant": true,
           "refId": "B",
           "format": "table"
         },
         {
-          "expr": "kubepocket_pvc_requested_gib",
+          "expr": "avg by (pvc, namespace, cluster, storageclass) (kubepocket_pvc_requested_gib)",
           "instant": true,
           "refId": "C",
           "format": "table"
@@ -3967,7 +4016,7 @@
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -3977,7 +4026,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (severity) (kubepocket_active_alerts)",
+          "expr": "avg by (namespace, severity, cluster) (kubepocket_active_alerts)",
           "legendFormat": "{{severity}}",
           "refId": "A",
           "instant": true
@@ -4072,7 +4121,7 @@
       "type": "table",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -4082,7 +4131,7 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_active_alerts",
+          "expr": "avg by (namespace, severity, cluster) (kubepocket_active_alerts)",
           "legendFormat": "",
           "refId": "A",
           "instant": true,
@@ -4182,7 +4231,7 @@
       "type": "table",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "prometheus"
       },
       "gridPos": {
         "h": 10,
@@ -4192,7 +4241,7 @@
       },
       "targets": [
         {
-          "expr": "kubepocket_alert_detail",
+          "expr": "max by (exported_namespace, message, severity, cluster) (kubepocket_alert_detail{exported_namespace=~\"$namespace\"})",
           "instant": true,
           "refId": "A",
           "format": "table"
@@ -4299,6 +4348,11 @@
               "severity": "Severity",
               "message": "Mesaj",
               "exported_namespace": "Namespace"
+            },
+            "indexByName": {
+              "exported_namespace": 0,
+              "severity": 1,
+              "message": 2
             }
           }
         }
