@@ -18,7 +18,7 @@
   "title": "KubePocket",
   "uid": "kubepocket-main",
   "schemaVersion": 36,
-  "version": 53,
+  "version": 59,
   "refresh": "30s",
   "templating": {
     "list": [
@@ -58,10 +58,10 @@
   "panels": [
     {
       "id": 100,
-      "title": "\ud83c\udf10 NAMESPACE BAZLI",
+      "title": "\ud83c\udf10 NAMESPACE OVERVIEW",
       "type": "text",
       "gridPos": {
-        "h": 2,
+        "h": 3,
         "w": 24,
         "x": 0,
         "y": 0
@@ -80,7 +80,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 2
@@ -116,7 +116,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 2
@@ -152,7 +152,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 10
@@ -188,7 +188,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 10
@@ -236,7 +236,7 @@
       "title": "\ud83d\udcb0 RELATIVE COST",
       "type": "text",
       "gridPos": {
-        "h": 2,
+        "h": 3,
         "w": 24,
         "x": 0,
         "y": 48
@@ -255,7 +255,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 8,
         "x": 0,
         "y": 50
@@ -299,7 +299,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 8,
         "x": 8,
         "y": 50
@@ -357,7 +357,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 8,
         "x": 16,
         "y": 50
@@ -415,7 +415,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
         "y": 60
@@ -449,7 +449,7 @@
       "title": "\ud83d\uddd1\ufe0f WASTE DETECTION",
       "type": "text",
       "gridPos": {
-        "h": 2,
+        "h": 3,
         "w": 24,
         "x": 0,
         "y": 68
@@ -776,7 +776,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
         "y": 118
@@ -810,7 +810,7 @@
       "title": "\ud83d\udea8 POD ANOMALY",
       "type": "text",
       "gridPos": {
-        "h": 2,
+        "h": 3,
         "w": 24,
         "x": 0,
         "y": 126
@@ -829,7 +829,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 8,
         "x": 0,
         "y": 128
@@ -888,7 +888,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 8,
         "x": 8,
         "y": 128
@@ -947,7 +947,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 8,
         "x": 16,
         "y": 128
@@ -1002,7 +1002,7 @@
       "title": "\ud83d\udc33 POD DETAIL",
       "type": "text",
       "gridPos": {
-        "h": 2,
+        "h": 3,
         "w": 24,
         "x": 0,
         "y": 138
@@ -1021,7 +1021,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 140
@@ -1057,7 +1057,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 140
@@ -1093,7 +1093,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 12,
         "w": 12,
         "x": 0,
         "y": 148
@@ -1209,7 +1209,7 @@
       "title": "\ud83d\udcca SUMMARY",
       "type": "text",
       "gridPos": {
-        "h": 2,
+        "h": 3,
         "w": 24,
         "x": 0,
         "y": 156
@@ -1228,7 +1228,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 12,
         "w": 12,
         "x": 0,
         "y": 158
@@ -1266,7 +1266,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 12,
         "w": 12,
         "x": 12,
         "y": 158
@@ -1304,7 +1304,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 4,
+        "h": 6,
         "w": 4,
         "x": 0,
         "y": 166
@@ -1363,7 +1363,7 @@
       "title": "\ud83d\udca1 RECOMMENDATIONS",
       "type": "text",
       "gridPos": {
-        "h": 2,
+        "h": 3,
         "w": 24,
         "x": 0,
         "y": 18
@@ -1382,7 +1382,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 12,
+        "h": 16,
         "w": 24,
         "x": 0,
         "y": 20
@@ -1543,7 +1543,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 12,
+        "h": 16,
         "w": 24,
         "x": 0,
         "y": 32
@@ -1700,7 +1700,7 @@
       "title": "\ud83d\udccb KUBERNETES EVENTS",
       "type": "text",
       "gridPos": {
-        "h": 2,
+        "h": 3,
         "w": 24,
         "x": 0,
         "y": 172
@@ -1719,7 +1719,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 8,
         "x": 0,
         "y": 174
@@ -1749,7 +1749,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 8,
         "x": 8,
         "y": 174
@@ -1843,7 +1843,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 12,
+        "h": 14,
         "w": 24,
         "x": 0,
         "y": 184
@@ -2002,7 +2002,7 @@
       "title": "\u26a1 REAL USAGE vs REQUEST",
       "type": "text",
       "gridPos": {
-        "h": 2,
+        "h": 3,
         "w": 24,
         "x": 0,
         "y": 198
@@ -2240,14 +2240,14 @@
     },
     {
       "id": 905,
-      "title": "CPU \u2014 Request (mavi saydam) + Actual (turuncu) \u2014 Top 10",
+      "title": "CPU \u2014 Request (blue) + Actual (orange) \u2014 Top 10",
       "type": "barchart",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 14,
+        "h": 16,
         "w": 24,
         "x": 0,
         "y": 206
@@ -2405,14 +2405,14 @@
     },
     {
       "id": 906,
-      "title": "Memory \u2014 Request (mavi saydam) + Actual (turuncu) \u2014 Top 10",
+      "title": "Memory \u2014 Request (blue) + Actual (orange) \u2014 Top 10",
       "type": "barchart",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 14,
+        "h": 16,
         "w": 24,
         "x": 0,
         "y": 222
@@ -2577,7 +2577,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 12,
+        "h": 14,
         "w": 24,
         "x": 0,
         "y": 218
@@ -2750,13 +2750,13 @@
       "title": "\ud83d\udda5\ufe0f NODE METRICS",
       "type": "text",
       "gridPos": {
-        "h": 2,
+        "h": 3,
         "w": 24,
         "x": 0,
         "y": 260
       },
       "options": {
-        "content": "## Node Kapasite & Kullan\u0131m",
+        "content": "## Node Capacity & Usage",
         "mode": "markdown"
       }
     },
@@ -2769,7 +2769,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 3,
+        "h": 6,
         "w": 24,
         "x": 0,
         "y": 263
@@ -2813,14 +2813,14 @@
     },
     {
       "id": 1106,
-      "title": "\ud83d\udda5\ufe0f Node Detay Tablosu \u2014 s\u0131ralamak i\u00e7in s\u00fctun ba\u015fl\u0131\u011f\u0131na t\u0131kla",
+      "title": "\ud83d\udda5\ufe0f Node Detail Table \u2014 click column header to sort",
       "type": "table",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 10,
+        "h": 14,
         "w": 24,
         "x": 0,
         "y": 274
@@ -3607,13 +3607,13 @@
       "title": "\ud83d\udcbe STORAGE / PVC",
       "type": "text",
       "gridPos": {
-        "h": 2,
+        "h": 3,
         "w": 24,
         "x": 0,
         "y": 286
       },
       "options": {
-        "content": "## PVC & Storage \u0130zleme",
+        "content": "## PVC & Storage Monitoring",
         "mode": "markdown"
       }
     },
@@ -3626,7 +3626,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 4,
+        "h": 6,
         "w": 6,
         "x": 0,
         "y": 288
@@ -3674,7 +3674,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 4,
+        "h": 6,
         "w": 6,
         "x": 6,
         "y": 288
@@ -3721,7 +3721,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 4,
+        "h": 6,
         "w": 6,
         "x": 12,
         "y": 288
@@ -3772,7 +3772,7 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 4,
+        "h": 6,
         "w": 6,
         "x": 18,
         "y": 288
@@ -3813,14 +3813,14 @@
     },
     {
       "id": 1305,
-      "title": "PVC Capacity \u2014 namespace / pvc bazl\u0131 (GiB)",
+      "title": "PVC Capacity by Namespace / PVC (GiB)",
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 12,
         "x": 0,
         "y": 292
@@ -3868,14 +3868,14 @@
     },
     {
       "id": 1306,
-      "title": "PVC Detay Tablosu",
+      "title": "PVC Detail Table",
       "type": "table",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 12,
         "x": 12,
         "y": 292
@@ -4012,14 +4012,14 @@
     },
     {
       "id": 1307,
-      "title": "\ud83d\udea8 Active Alerts \u2014 severity \u00f6zeti (critical/warning/anomaly)",
+      "title": "\ud83d\udea8 Active Alerts \u2014 Severity Summary (critical/warning/anomaly)",
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 12,
         "w": 12,
         "x": 0,
         "y": 302
@@ -4117,14 +4117,14 @@
     },
     {
       "id": 1308,
-      "title": "\ud83d\udea8 Active Alerts \u2014 namespace & severity detay\u0131",
+      "title": "\ud83d\udea8 Active Alerts \u2014 Namespace & Severity Detail",
       "type": "table",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 14,
         "w": 12,
         "x": 12,
         "y": 302
@@ -4223,18 +4223,18 @@
           }
         }
       ],
-      "description": "Alert say\u0131lar\u0131 namespace+severity bazl\u0131. PVC doluluk/unbound alert detaylar\u0131 i\u00e7in: GET /api/alerts/ endpoint'ini kullan\u0131n veya kubepocket_active_alerts metri\u011fine bak\u0131n."
+      "description": "Alert counts by namespace+severity. For PVC capacity/unbound alert details: GET /api/alerts/"
     },
     {
       "id": 1309,
-      "title": "\ud83d\udea8 Alert Mesajlar\u0131 (son 50)",
+      "title": "\ud83d\udea8 Alert Messages (last 50)",
       "type": "table",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 10,
+        "h": 14,
         "w": 24,
         "x": 0,
         "y": 310
