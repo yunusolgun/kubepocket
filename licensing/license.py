@@ -2,40 +2,35 @@
 KubePocket License System
 =========================
 
-Offline RSA-imzalı license key sistemi.
+Offline RSA-signed license key system.
 
 Key format:
     kp_<base64url(json_payload)>.<base64url(rsa_signature)>
 
-Payload:
-    {
-        "customer": "acme-corp",
-        "email": "admin@acme.com",
-        "tier": "free|pro",
-        "cluster_limit": 1,
-        "namespace_limit": 4,
-        "retention_days": 30,
-        "features": ["anomaly", "forecast", "alerts"],
-        "issued_at": "2026-03-01",
-        "expires_at": "2027-03-01"
-    }
-
 Tier defaults:
-    free:  1 cluster, 4 namespace, 30 gün retention, anomali+forecast+alerts
-    pro:   unlimited her şey, tüm özellikler
+    free:  1 cluster, 4 namespaces, 30 days retention, metrics+alerts+anomaly+forecast
+    pro:   unlimited everything, all features, 365 days retention
+
+Community (no key):
+    Same limits as free tier, with a 30-day trial period tracked in PostgreSQL.
+    After 30 days the system continues to work but returns trial_expired=True.
+
+Pro expired:
+    Falls back to free tier limits with pro_expired=True warning.
+    Existing data is NOT deleted — only new collection is limited to 4 namespaces.
+    Retention cleanup only affects data newer than the downgrade date.
 """
 
 import json
 import base64
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Optional
 from dataclasses import dataclass, field
 
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.exceptions import InvalidSignature
 
-# ── Public key (KubePocket içine gömülü) ─────────────────────────────────────
 PUBLIC_KEY_PEM = b"""-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1LErsPSwpOlEEXu6Zfhk
 VY+K2eEWqhMXIr34PYZbPrNyWoW1OLp20tSZ/PnIol9Li9KP95f3CiMF+puPsb/d
@@ -46,7 +41,8 @@ gc4DGnW54ruFlpIQxspZqr0jHGgyZzaEn9IGkFU/uLGvy1rflL2Ty/GvbkMj4pcv
 QQIDAQAB
 -----END PUBLIC KEY-----"""
 
-# ── Tier tanımları ────────────────────────────────────────────────────────────
+TRIAL_DAYS = 30
+
 TIER_DEFAULTS = {
     "free": {
         "cluster_limit":   1,
@@ -55,14 +51,12 @@ TIER_DEFAULTS = {
         "features":        ["metrics", "alerts", "anomaly", "forecast"],
     },
     "pro": {
-        "cluster_limit": -1,   # unlimited
-        "namespace_limit": -1,   # unlimited
+        "cluster_limit": -1,
+        "namespace_limit": -1,
         "retention_days":  365,
         "features":        ["metrics", "alerts", "anomaly", "forecast"],
     },
 }
-
-# ── Dataclass ─────────────────────────────────────────────────────────────────
 
 
 @dataclass
@@ -78,6 +72,15 @@ class LicenseInfo:
     issued_at:        str = ""
     expires_at:       str = ""
     error:            str = ""
+    # Trial fields (community only)
+    is_trial:         bool = False
+    trial_started_at: str = ""
+    trial_expires_at: str = ""
+    trial_expired:    bool = False
+    trial_days_left:  Optional[int] = None
+    # Pro expired downgrade
+    pro_expired:      bool = False
+    pro_expired_at:   str = ""
 
     def is_unlimited_namespaces(self) -> bool:
         return self.namespace_limit == -1
@@ -92,8 +95,7 @@ class LicenseInfo:
         if not self.expires_at:
             return False
         try:
-            exp = date.fromisoformat(self.expires_at)
-            return date.today() > exp
+            return date.today() >= date.fromisoformat(self.expires_at)
         except ValueError:
             return False
 
@@ -101,14 +103,13 @@ class LicenseInfo:
         if not self.expires_at:
             return None
         try:
-            exp = date.fromisoformat(self.expires_at)
-            delta = (exp - date.today()).days
+            delta = (date.fromisoformat(self.expires_at) - date.today()).days
             return max(delta, 0)
         except ValueError:
             return None
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "valid":             self.valid,
             "tier":              self.tier,
             "customer":          self.customer,
@@ -122,11 +123,54 @@ class LicenseInfo:
             "days_until_expiry": self.days_until_expiry(),
             "error":             self.error,
         }
+        if self.is_trial:
+            d["trial"] = {
+                "active": not self.trial_expired,
+                "started_at": self.trial_started_at,
+                "expires_at": self.trial_expires_at,
+                "days_left":  self.trial_days_left,
+                "expired":    self.trial_expired,
+            }
+        if self.pro_expired:
+            d["pro_expired"] = {
+                "expired_at": self.pro_expired_at,
+                "message": (
+                    f"Your Pro license expired on {self.pro_expired_at}. "
+                    "You have been downgraded to the Free tier. "
+                    "Existing data is preserved — renew Pro to regain full access."
+                ),
+            }
+        return d
 
 
-# ── Community (ücretsiz, key yok) ─────────────────────────────────────────────
+# ── Trial helpers ─────────────────────────────────────────────────────────────
+def _get_or_create_trial() -> tuple[datetime, bool]:
+    try:
+        from db.models import SessionLocal, TrialInfo
+        db = SessionLocal()
+        try:
+            trial = db.query(TrialInfo).filter(TrialInfo.id == 1).first()
+            if trial is None:
+                trial = TrialInfo(id=1, started_at=datetime.utcnow())
+                db.add(trial)
+                db.commit()
+                db.refresh(trial)
+            started_at = trial.started_at
+            expired = datetime.utcnow() > started_at + timedelta(days=TRIAL_DAYS)
+            return started_at, expired
+        finally:
+            db.close()
+    except Exception:
+        return datetime.utcnow(), False
+
+
 def _community_license() -> LicenseInfo:
     defaults = TIER_DEFAULTS["free"]
+    started_at, expired = _get_or_create_trial()
+    expires_at = started_at + timedelta(days=TRIAL_DAYS)
+    days_left = max((expires_at.date() - date.today()).days,
+                    0) if not expired else 0
+
     return LicenseInfo(
         valid=True,
         tier="free",
@@ -135,10 +179,37 @@ def _community_license() -> LicenseInfo:
         cluster_limit=defaults["cluster_limit"],
         namespace_limit=defaults["namespace_limit"],
         retention_days=defaults["retention_days"],
+        is_trial=True,
+        trial_started_at=started_at.date().isoformat(),
+        trial_expires_at=expires_at.date().isoformat(),
+        trial_expired=expired,
+        trial_days_left=days_left,
     )
 
 
-# ── Key doğrulama ─────────────────────────────────────────────────────────────
+def _expired_pro_fallback(customer: str, email: str, expires_at: str) -> LicenseInfo:
+    """
+    Pro license expired — fall back to free tier limits.
+    Data is NOT deleted. Retention cleanup will only apply to data
+    collected after the expiry date.
+    """
+    defaults = TIER_DEFAULTS["free"]
+    return LicenseInfo(
+        valid=True,
+        tier="free",
+        customer=customer,
+        email=email,
+        features=defaults["features"],
+        cluster_limit=defaults["cluster_limit"],
+        namespace_limit=defaults["namespace_limit"],
+        retention_days=defaults["retention_days"],
+        expires_at=expires_at,
+        pro_expired=True,
+        pro_expired_at=expires_at,
+    )
+
+
+# ── Key verification ──────────────────────────────────────────────────────────
 def verify_license(license_key: Optional[str]) -> LicenseInfo:
     if not license_key or license_key.strip() == "":
         return _community_license()
@@ -182,11 +253,21 @@ def verify_license(license_key: Optional[str]) -> LicenseInfo:
                 "namespace_limit", defaults["namespace_limit"]),
             retention_days=payload.get(
                 "retention_days",  defaults["retention_days"]),
-            features=payload.get("features",        defaults["features"]),
+            features=payload.get(
+                "features",              defaults["features"]),
             issued_at=payload.get("issued_at", ""),
             expires_at=payload.get("expires_at", ""),
         )
 
+        # Expired pro → soft downgrade to free (data preserved)
+        if info.is_expired() and tier == "pro":
+            return _expired_pro_fallback(
+                customer=info.customer,
+                email=info.email,
+                expires_at=info.expires_at,
+            )
+
+        # Expired free key → invalid
         if info.is_expired():
             return LicenseInfo(
                 valid=False,
@@ -204,7 +285,7 @@ def verify_license(license_key: Optional[str]) -> LicenseInfo:
         return LicenseInfo(valid=False, error=f"License verification error: {e}")
 
 
-# ── Limit kontrol yardımcıları ────────────────────────────────────────────────
+# ── Limit helpers ─────────────────────────────────────────────────────────────
 def check_namespace_limit(license: LicenseInfo, namespace_count: int) -> tuple[bool, str]:
     if license.is_unlimited_namespaces():
         return True, ""
@@ -223,10 +304,3 @@ def check_feature(license: LicenseInfo, feature: str) -> tuple[bool, str]:
         f"Feature '{feature}' is not available on the {license.tier} tier. "
         f"Upgrade to Pro to access this feature."
     )
-
-
-if __name__ == "__main__":
-    import json as _json
-    info = verify_license(None)
-    print("Community license:")
-    print(_json.dumps(info.to_dict(), indent=2))

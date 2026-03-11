@@ -7,11 +7,10 @@ from collector.k8s_client import K8sClient
 import sys
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import argparse
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 
 CLUSTER_NAME = os.getenv('CLUSTER_NAME', 'default')
 LICENSE_KEY = os.getenv('KUBEPOCKET_LICENSE_KEY', '')
@@ -25,6 +24,50 @@ def _get_license():
         return None
 
 
+def _cleanup_old_data(db, cluster_id: int, license):
+    """
+    Retention cleanup — only deletes data collected AFTER the license
+    downgrade/expiry date. Data collected during an active Pro period
+    is never touched, preserving history if the customer renews.
+    """
+    try:
+        from db.models import Metric, Alert
+
+        retention_days = license.retention_days  # 30 for free, 365 for pro
+
+        # For expired pro: only clean up data collected after the expiry date.
+        # This means we never delete data that was collected while Pro was active.
+        if license.pro_expired and license.pro_expired_at:
+            try:
+                expiry_date = datetime.fromisoformat(license.pro_expired_at)
+            except ValueError:
+                expiry_date = datetime.utcnow()
+            # Cutoff = expiry_date + retention_days
+            # (data collected after expiry is subject to free retention)
+            cutoff = expiry_date + timedelta(days=retention_days)
+            # Only delete if we're past that cutoff
+            if datetime.utcnow() < cutoff:
+                return  # nothing to clean yet
+            delete_before = expiry_date  # never delete pro-era data
+        else:
+            delete_before = datetime.utcnow() - timedelta(days=retention_days)
+
+        deleted = (
+            db.query(Metric)
+            .filter(
+                Metric.cluster_id == cluster_id,
+                Metric.timestamp < delete_before,
+            )
+            .delete()
+        )
+        if deleted:
+            db.commit()
+            print(f"  🗑  Retention cleanup: removed {deleted} old metric records "
+                  f"(before {delete_before.date()})")
+    except Exception as e:
+        print(f"  Warning: Retention cleanup failed: {e}")
+
+
 def collect_once(context=None):
     print(f"\n{'='*50}")
     print(f"KubePocket Collector - {datetime.now()}")
@@ -32,21 +75,26 @@ def collect_once(context=None):
 
     init_db()
 
-    # ── License kontrolü ──────────────────────────────────────
+    # ── License ───────────────────────────────────────────────
     license = _get_license()
     if license is not None:
         if not license.valid:
             print(f"⚠️  License: {license.error}")
-            print("   Running in Free tier mode (3 namespace limit)")
+            print("   Running in Free tier mode (4 namespace limit)")
             from licensing.license import LicenseInfo
-            license = LicenseInfo(valid=True)  # community defaults
+            license = LicenseInfo(valid=True)
         else:
             tier_label = license.tier.upper()
             ns_label = "unlimited" if license.is_unlimited_namespaces() else str(
                 license.namespace_limit)
             print(
                 f"🔑 License: {tier_label} — {license.customer} (namespaces: {ns_label})")
-            if license.days_until_expiry() is not None and license.days_until_expiry() <= 30:
+            if license.pro_expired:
+                print(f"⚠️  Pro license expired on {license.pro_expired_at}. "
+                      f"Downgraded to Free tier. Existing data preserved.")
+            elif license.is_trial and license.trial_expired:
+                print("⚠️  Free trial expired. System continues in Free tier mode.")
+            elif license.days_until_expiry() is not None and license.days_until_expiry() <= 30:
                 print(
                     f"⚠️  License expires in {license.days_until_expiry()} days!")
     # ──────────────────────────────────────────────────────────
@@ -60,7 +108,6 @@ def collect_once(context=None):
     db = SessionLocal()
     try:
         repo = MetricRepository(db)
-
         cluster = repo.get_or_create_cluster(
             CLUSTER_NAME, context or 'in-cluster')
 
@@ -71,7 +118,7 @@ def collect_once(context=None):
             print("No metrics collected!")
             return False
 
-        # Namespace limit kontrolü
+        # Namespace limit
         if license is not None and not license.is_unlimited_namespaces():
             if len(metrics) > license.namespace_limit:
                 print(f"⚠️  Namespace limit: {license.namespace_limit} (found {len(metrics)}). "
@@ -80,6 +127,10 @@ def collect_once(context=None):
                 metrics = metrics[:license.namespace_limit]
 
         saved = repo.save_metrics(cluster.id, metrics)
+
+        # Retention cleanup — preserves pro-era data on downgrade
+        if license is not None:
+            _cleanup_old_data(db, cluster.id, license)
 
         print("\nCollecting Kubernetes events...")
         try:
@@ -94,29 +145,22 @@ def collect_once(context=None):
             repo.create_alert(cluster.id, p['namespace'],
                               f"Pod {p['pod_name']} restarted {p['restarts']} times", 'warning')
 
-        # PVC alert kontrolleri
+        # PVC alert checks
         try:
             from db.models import Alert
             pvcs = k8s.collect_pvc_metrics()
             pvc_names = {pvc['name'] for pvc in pvcs}
 
-            # Mevcut aktif PVC alertlarını al
             active_pvc_alerts = (
                 db.query(Alert)
-                .filter(
-                    Alert.resolved == False,
-                    Alert.message.like('PVC %')
-                )
+                .filter(Alert.resolved == False, Alert.message.like('PVC %'))
                 .all()
             )
 
-            # Her PVC için durum kontrolü
             triggering_pvcs = set()
             for pvc in pvcs:
-                # Unbound kontrolü
                 if not pvc['bound']:
                     triggering_pvcs.add(pvc['name'])
-                    # Aynı alert zaten var mı?
                     existing = next((a for a in active_pvc_alerts
                                      if pvc['name'] in a.message and 'not bound' in a.message), None)
                     if not existing:
@@ -125,7 +169,6 @@ def collect_once(context=None):
                             f"PVC {pvc['name']} is not bound (phase: {pvc['phase']})",
                             'critical'
                         )
-                # Doluluk kontrolü
                 if pvc['used_pct'] is not None:
                     if pvc['used_pct'] >= 90:
                         triggering_pvcs.add(pvc['name'])
@@ -150,14 +193,11 @@ def collect_once(context=None):
                                 'warning'
                             )
 
-            # Artık geçerli olmayan PVC alertlarını resolve et
             resolved = 0
             for alert in active_pvc_alerts:
-                # Hangi PVC'ye ait olduğunu bul
                 alert_pvc = next(
                     (n for n in pvc_names if n in alert.message), None)
                 if alert_pvc is None:
-                    # PVC artık cluster'da yok — resolve et
                     alert.resolved = True
                     resolved += 1
                     print(f"  ✅ Resolved (PVC gone): {alert.message[:60]}")
@@ -207,9 +247,9 @@ def run_daemon(interval=300):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='KubePocket Collector')
-    parser.add_argument('--daemon', action='store_true')
+    parser.add_argument('--daemon',   action='store_true')
     parser.add_argument('--interval', type=int, default=300)
-    parser.add_argument('--context', help='Kubernetes context')
+    parser.add_argument('--context',  help='Kubernetes context')
     args = parser.parse_args()
 
     if args.daemon:

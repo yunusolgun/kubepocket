@@ -5,7 +5,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
-# PostgreSQL bağlantısı — env var'dan al
 DATABASE_URL = os.getenv(
     'DATABASE_URL',
     'postgresql://kubepocket:kubepocket@localhost:5432/kubepocket'
@@ -13,10 +12,10 @@ DATABASE_URL = os.getenv(
 
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,       # bağlantı kopuksa otomatik yeniden bağlan
-    pool_size=5,              # connection pool boyutu
-    max_overflow=10,          # pool dolunca max ekstra bağlantı
-    pool_recycle=300          # 5 dakikada bir bağlantıyı yenile
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10,
+    pool_recycle=300
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -81,11 +80,10 @@ class KubeEvent(Base):
     cluster_id = Column(Integer, nullable=True)
     namespace = Column(String(255), nullable=False, index=True)
     pod_name = Column(String(255), nullable=False, index=True)
-    # OOMKilled, BackOff, Evicted, etc.
     event_type = Column(String(100), nullable=False, index=True)
-    reason = Column(String(255))          # Kubernetes reason field
-    message = Column(Text)                # Kubernetes message field
-    count = Column(Integer, default=1)    # Kaç kez tekrarlandı
+    reason = Column(String(255))
+    message = Column(Text)
+    count = Column(Integer, default=1)
     first_seen = Column(DateTime, nullable=True)
     last_seen = Column(DateTime, nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
@@ -101,6 +99,20 @@ class ApiKey(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     last_used_at = Column(DateTime, nullable=True)
     expires_at = Column(DateTime, nullable=True)
+
+
+class TrialInfo(Base):
+    """
+    Stores the trial start date for community (no license key) installations.
+    Only one row should ever exist (id=1).
+    Trial period: 30 days from started_at.
+    After expiry the system continues to work but warns on every API response.
+    """
+    __tablename__ = 'trial_info'
+
+    id = Column(Integer, primary_key=True, default=1)
+    started_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    notified_expiry = Column(Boolean, default=False)  # for future use
 
 
 def init_db():
