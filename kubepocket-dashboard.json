@@ -18,7 +18,7 @@
   "title": "KubePocket",
   "uid": "kubepocket-main",
   "schemaVersion": 36,
-  "version": 59,
+  "version": 62,
   "refresh": "30s",
   "templating": {
     "list": [
@@ -41,6 +41,33 @@
         },
         "refresh": 2,
         "sort": 1
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"}, exported_pod)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "pod",
+        "label": "Pod",
+        "options": [],
+        "query": {
+          "query": "label_values(kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"}, exported_pod)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query",
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        }
       },
       {
         "name": "topk",
@@ -646,7 +673,7 @@
       },
       "targets": [
         {
-          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (topk($topk, kubepocket_pod_waste_score{exported_namespace=~\"$namespace\"}))",
+          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (topk($topk, kubepocket_pod_waste_score{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
@@ -705,7 +732,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_waste_cpu_cores{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_waste_cpu_cores{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
@@ -744,7 +771,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_waste_memory_gib{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_waste_memory_gib{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
@@ -783,7 +810,7 @@
       },
       "targets": [
         {
-          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (topk($topk, kubepocket_pod_waste_score{exported_namespace=~\"$namespace\"}))",
+          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (topk($topk, kubepocket_pod_waste_score{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}} ({{exported_namespace}})",
           "refId": "A"
         }
@@ -836,7 +863,7 @@
       },
       "targets": [
         {
-          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (topk($topk, kubepocket_pod_anomaly_score{exported_namespace=~\"$namespace\"}))",
+          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (topk($topk, kubepocket_pod_anomaly_score{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
@@ -895,7 +922,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_restart_anomaly{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_restart_anomaly{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
@@ -954,7 +981,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_cpu_anomaly{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_cpu_anomaly{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
@@ -1028,7 +1055,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}} ({{exported_namespace}})",
           "refId": "A"
         }
@@ -1064,7 +1091,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}} ({{exported_namespace}})",
           "refId": "A"
         }
@@ -1100,7 +1127,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_restarts_total{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk($topk, kubepocket_pod_restarts_total{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
@@ -1156,7 +1183,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster, status) (kubepocket_pod_running{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster, status) (kubepocket_pod_running{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"})",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
@@ -1389,7 +1416,7 @@
       },
       "targets": [
         {
-          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (kubepocket_pod_waste_score{exported_namespace=~\"$namespace\"})",
+          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (kubepocket_pod_waste_score{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"})",
           "legendFormat": "",
           "instant": true,
           "refId": "A",
@@ -1550,7 +1577,7 @@
       },
       "targets": [
         {
-          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (kubepocket_pod_anomaly_score{exported_namespace=~\"$namespace\"} > 30)",
+          "expr": "max by (exported_namespace, exported_pod, cluster, recommendation) (kubepocket_pod_anomaly_score{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"} > 30)",
           "legendFormat": "",
           "instant": true,
           "refId": "A",
@@ -1726,7 +1753,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_pod, exported_namespace, event_type, cluster) (kubepocket_pod_event_count{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_pod, exported_namespace, event_type, cluster) (kubepocket_pod_event_count{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"})",
           "legendFormat": "{{event_type}}",
           "instant": true,
           "refId": "A"
@@ -1756,7 +1783,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_pod, exported_namespace, event_type, cluster) (topk(10, avg by (exported_pod, exported_namespace, event_type, cluster) (kubepocket_pod_event_count{exported_namespace=~\"$namespace\"})))",
+          "expr": "avg by (exported_pod, exported_namespace, event_type, cluster) (topk(10, avg by (exported_pod, exported_namespace, event_type, cluster) (kubepocket_pod_event_count{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"})))",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "instant": true,
           "refId": "A"
@@ -1812,7 +1839,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_pod, exported_namespace, event_type, cluster) (kubepocket_pod_event_count{event_type=\"CrashLoopBackOff\", exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_pod, exported_namespace, event_type, cluster) (kubepocket_pod_event_count{event_type=\"CrashLoopBackOff\", exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"})",
           "legendFormat": "{{exported_pod}} / {{exported_namespace}}",
           "refId": "A"
         }
@@ -1850,7 +1877,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_pod, exported_namespace, event_type, cluster) (kubepocket_pod_event_count{exported_namespace=~\"$namespace\"} > 0)",
+          "expr": "avg by (exported_pod, exported_namespace, event_type, cluster) (kubepocket_pod_event_count{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"} > 0)",
           "legendFormat": "",
           "instant": true,
           "refId": "A",
@@ -2028,7 +2055,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (avg(kubepocket_pod_cpu_efficiency_pct{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (avg(kubepocket_pod_cpu_efficiency_pct{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "refId": "A",
           "instant": true
         }
@@ -2085,7 +2112,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (avg(kubepocket_pod_memory_efficiency_pct{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (avg(kubepocket_pod_memory_efficiency_pct{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "refId": "A",
           "instant": true
         }
@@ -2142,7 +2169,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (sum(kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"}) - sum(kubepocket_pod_cpu_actual_cores{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (sum(kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}) - sum(kubepocket_pod_cpu_actual_cores{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "refId": "A",
           "instant": true
         }
@@ -2198,7 +2225,7 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (sum(kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\"}) - sum(kubepocket_pod_memory_actual_gib{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (sum(kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}) - sum(kubepocket_pod_memory_actual_gib{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "refId": "A",
           "instant": true
         }
@@ -2254,14 +2281,14 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk(10, kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk(10, kubepocket_pod_cpu_cores{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}}",
           "instant": true,
           "refId": "A",
           "format": "table"
         },
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk(10, kubepocket_pod_cpu_actual_cores{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk(10, kubepocket_pod_cpu_actual_cores{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}}",
           "instant": true,
           "refId": "B",
@@ -2419,14 +2446,14 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk(10, kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk(10, kubepocket_pod_memory_gib{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}}",
           "instant": true,
           "refId": "A",
           "format": "table"
         },
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk(10, kubepocket_pod_memory_actual_gib{exported_namespace=~\"$namespace\"}))",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (topk(10, kubepocket_pod_memory_actual_gib{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"}))",
           "legendFormat": "{{exported_pod}}",
           "instant": true,
           "refId": "B",
@@ -2584,13 +2611,13 @@
       },
       "targets": [
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (kubepocket_pod_cpu_efficiency_pct{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (kubepocket_pod_cpu_efficiency_pct{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"})",
           "instant": true,
           "refId": "A",
           "format": "table"
         },
         {
-          "expr": "avg by (exported_namespace, exported_pod, cluster) (kubepocket_pod_memory_efficiency_pct{exported_namespace=~\"$namespace\"})",
+          "expr": "avg by (exported_namespace, exported_pod, cluster) (kubepocket_pod_memory_efficiency_pct{exported_namespace=~\"$namespace\", exported_pod=~\"$pod\"})",
           "instant": true,
           "refId": "B",
           "format": "table"
