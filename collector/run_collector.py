@@ -24,6 +24,33 @@ def _get_license():
         return None
 
 
+def _check_cluster_limit(license, repo) -> bool:
+    """
+    Returns True if this cluster is allowed to collect data.
+    For free tier: only 1 cluster allowed.
+    For pro tier: unlimited.
+    If the cluster already exists in DB it is always allowed
+    (it was registered when the license was valid).
+    """
+    if license is None or license.is_unlimited_clusters():
+        return True
+
+    # If this cluster is already registered, always allow
+    existing = repo.get_cluster_by_name(CLUSTER_NAME)
+    if existing:
+        return True
+
+    # New cluster — check how many clusters already exist
+    all_clusters = repo.get_all_clusters()
+    if len(all_clusters) >= license.cluster_limit:
+        print(f"⛔ Cluster limit reached ({len(all_clusters)}/{license.cluster_limit}). "
+              f"This cluster ({CLUSTER_NAME}) will not be registered. "
+              f"Upgrade to Pro for unlimited clusters.")
+        return False
+
+    return True
+
+
 def _cleanup_old_data(db, cluster_id: int, license):
     """
     Retention cleanup — only deletes data collected AFTER the license
@@ -31,24 +58,19 @@ def _cleanup_old_data(db, cluster_id: int, license):
     is never touched, preserving history if the customer renews.
     """
     try:
-        from db.models import Metric, Alert
+        from db.models import Metric
 
-        retention_days = license.retention_days  # 30 for free, 365 for pro
+        retention_days = license.retention_days
 
-        # For expired pro: only clean up data collected after the expiry date.
-        # This means we never delete data that was collected while Pro was active.
         if license.pro_expired and license.pro_expired_at:
             try:
                 expiry_date = datetime.fromisoformat(license.pro_expired_at)
             except ValueError:
                 expiry_date = datetime.utcnow()
-            # Cutoff = expiry_date + retention_days
-            # (data collected after expiry is subject to free retention)
             cutoff = expiry_date + timedelta(days=retention_days)
-            # Only delete if we're past that cutoff
             if datetime.utcnow() < cutoff:
-                return  # nothing to clean yet
-            delete_before = expiry_date  # never delete pro-era data
+                return
+            delete_before = expiry_date
         else:
             delete_before = datetime.utcnow() - timedelta(days=retention_days)
 
@@ -80,15 +102,16 @@ def collect_once(context=None):
     if license is not None:
         if not license.valid:
             print(f"⚠️  License: {license.error}")
-            print("   Running in Free tier mode (4 namespace limit)")
+            print("   Running in Free tier mode (4 namespace, 1 cluster limit)")
             from licensing.license import LicenseInfo
             license = LicenseInfo(valid=True)
         else:
             tier_label = license.tier.upper()
             ns_label = "unlimited" if license.is_unlimited_namespaces() else str(
                 license.namespace_limit)
-            print(
-                f"🔑 License: {tier_label} — {license.customer} (namespaces: {ns_label})")
+            cl_label = "unlimited" if license.is_unlimited_clusters() else str(license.cluster_limit)
+            print(f"🔑 License: {tier_label} — {license.customer} "
+                  f"(namespaces: {ns_label}, clusters: {cl_label})")
             if license.pro_expired:
                 print(f"⚠️  Pro license expired on {license.pro_expired_at}. "
                       f"Downgraded to Free tier. Existing data preserved.")
@@ -108,6 +131,12 @@ def collect_once(context=None):
     db = SessionLocal()
     try:
         repo = MetricRepository(db)
+
+        # ── Cluster limit check ───────────────────────────────
+        if not _check_cluster_limit(license, repo):
+            return False
+        # ─────────────────────────────────────────────────────
+
         cluster = repo.get_or_create_cluster(
             CLUSTER_NAME, context or 'in-cluster')
 
@@ -128,7 +157,7 @@ def collect_once(context=None):
 
         saved = repo.save_metrics(cluster.id, metrics)
 
-        # Retention cleanup — preserves pro-era data on downgrade
+        # Retention cleanup
         if license is not None:
             _cleanup_old_data(db, cluster.id, license)
 

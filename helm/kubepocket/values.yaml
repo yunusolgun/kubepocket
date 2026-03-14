@@ -3,9 +3,9 @@
 
 # =============================================
 # License Key
-# Boş bırakılırsa Free tier (3 namespace, 1 cluster)
-# Satın alınan key buraya veya KUBEPOCKET_LICENSE_KEY
-# environment variable olarak geçilebilir.
+# Leave empty for Free tier (4 namespaces, 1 cluster).
+# A purchased Pro key can be set here or passed via
+# the KUBEPOCKET_LICENSE_KEY environment variable.
 # =============================================
 licenseKey: ""
 
@@ -45,14 +45,14 @@ forecast:
 
 # =============================================
 # PostgreSQL (Bitnami subchart)
-# enabled: true  → Helm ile otomatik kur
-# enabled: false → externalDatabase ile harici DB kullan
+# enabled: true  → deploy PostgreSQL via Helm
+# enabled: false → use externalDatabase instead
 # =============================================
 postgresql:
   enabled: true
 
   image:
-    tag: latest # Sabit — her kurulumda manuel geçmeye gerek yok
+    tag: latest
 
   auth:
     username: kubepocket
@@ -71,7 +71,7 @@ postgresql:
       enabled: true
       size: 10Gi
 
-# Harici PostgreSQL (postgresql.enabled=false ise doldur)
+# External PostgreSQL (only used when postgresql.enabled=false)
 externalDatabase:
   host: ""
   port: 5432
@@ -110,35 +110,33 @@ serviceMonitor:
   metricRelabelings: []
 
 # =============================================
-# Monitoring entegrasyonu
+# Monitoring integration
 #
-# existingStack: false (varsayılan)
-#   → install.sh, kube-prometheus-stack'i monitoring
-#     namespace'ine kurar. Grafana + Prometheus dahil.
+# existingStack: false (default)
+#   → install.sh installs kube-prometheus-stack in the
+#     monitoring namespace, including Grafana + Prometheus.
 #
 # existingStack: true
-#   → Müşterinin mevcut Prometheus/Grafana stack'ine
-#     entegre olur. Grafana + Prometheus kurulmaz.
-#   - serviceMonitor.enabled: true yaparak ServiceMonitor'ı
-#     müşterinin Prometheus'unun baktığı namespace'e koy
-#   - grafanaDashboard.enabled: true yaparak dashboard'u
-#     otomatik olarak Grafana'ya yükle (ConfigMap via sidecar)
+#   → Integrates with the customer's existing Prometheus/Grafana.
+#     Grafana and Prometheus are NOT installed.
+#   - Set serviceMonitor.enabled: true to deploy the ServiceMonitor
+#     into the customer's Prometheus namespace.
+#   - Set grafanaDashboard.enabled: true to load the dashboard
+#     automatically via Grafana sidecar (ConfigMap).
 # =============================================
 monitoring:
   existingStack: false
 
-  # Müşterinin Prometheus'unun namespace'i
-  # ServiceMonitor bu namespace'e deploy edilir
-  # (existingStack: true ise geçerli)
+  # Namespace of the customer's Prometheus instance.
+  # The ServiceMonitor is deployed here when existingStack: true.
   namespace: "monitoring"
 
-  # Grafana dashboard — ConfigMap olarak deploy edilir
-  # Grafana sidecar (grafana.sidecar.dashboards.enabled=true)
-  # ile otomatik yüklenir
+  # Grafana dashboard — deployed as a ConfigMap.
+  # Requires Grafana sidecar (grafana.sidecar.dashboards.enabled=true).
   grafanaDashboard:
     enabled: false
-    namespace: "monitoring" # Grafana'nın baktığı namespace
-    folder: "KubePocket" # Grafana'da görünecek klasör adı
+    namespace: "monitoring"
+    folder: "KubePocket"
 
 podDisruptionBudget:
   enabled: false

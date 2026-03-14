@@ -12,9 +12,11 @@ KubePocket is a lightweight, easy-to-install monitoring solution for Kubernetes 
 - **Real-time monitoring** of CPU, memory, and pod restarts
 - **Namespace-based resource tracking**
 - **Cost optimization insights** and anomaly detection
+- **Anomaly detection & forecasting** — z-score based alerts and 7-day CPU forecasts
+- **Multi-cluster support** — monitor multiple clusters from a single Grafana dashboard
 - **Prometheus metrics exporter** for Grafana integration
 - **Offline RSA license system** — no license server required
-- **Zero configuration** — works out of the box
+- **Zero configuration** — works out of the box with minikube, Docker Desktop, or any cluster
 
 ---
 
@@ -26,7 +28,7 @@ KubePocket is a lightweight, easy-to-install monitoring solution for Kubernetes 
 ./install.sh
 ```
 
-The install script handles everything: Docker build, Helm install, Prometheus/Grafana stack, and Grafana dashboard import.
+The install script auto-detects your environment (minikube, docker-desktop, or custom) and handles everything: Docker build, Helm install, Prometheus/Grafana stack, and Grafana dashboard import.
 
 ### Production install
 
@@ -37,10 +39,25 @@ MODE=production \
   IMAGE_REPOSITORY=your-registry/kubepocket \
   IMAGE_TAG=3.0.0 \
   CLUSTER_NAME=prod-eu-west \
+  LICENSE_KEY=kp_... \
   ./install.sh
 ```
 
 See [INSTALL.md](INSTALL.md) for full documentation.
+
+---
+
+## 🌐 Multi-Cluster
+
+KubePocket supports multiple clusters out of the box. Each cluster runs its own KubePocket instance connected to a shared PostgreSQL database. The Grafana dashboard includes a **Cluster** dropdown to filter or compare across clusters.
+
+```
+cluster-eu  →  KubePocket (CLUSTER_NAME=prod-eu)  ┐
+cluster-us  →  KubePocket (CLUSTER_NAME=prod-us)  ├──→  Shared PostgreSQL  ←──  Grafana
+cluster-stg →  KubePocket (CLUSTER_NAME=staging)  ┘
+```
+
+See [INSTALL.md — Multi-Cluster Setup](INSTALL.md#multi-cluster-setup) for details.
 
 ---
 
@@ -59,6 +76,8 @@ KubePocket uses an **offline RSA-signed license key** system. No internet connec
 | Alerts            | ✅        | ✅         |
 | Anomaly Detection | ✅        | ✅         |
 | Forecast          | ✅        | ✅         |
+
+Free tier includes a **30-day community trial**. After expiry the system continues to operate with free tier limits and shows a warning in the license API response.
 
 ### Applying a license
 
@@ -93,15 +112,20 @@ curl -s http://localhost:8000/api/license | python3 -m json.tool
 ## 🏗 Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│                 kubepocket pod                   │
-│                                                 │
-│  collector ──→ PostgreSQL ←── API (8000)        │
-│                    ↑                            │
-│  stats_daemon ─────┘                            │
-│                                                 │
-│  exporter (8001) ←── Prometheus ←── Grafana     │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                   kubepocket pod                         │
+│                                                         │
+│  collector ──→ PostgreSQL ←── API (8000)                │
+│                    ↑                                    │
+│  stats_daemon ─────┘                                    │
+│                                                         │
+│  exporter (8001) ←── Prometheus ←── Grafana             │
+└─────────────────────────────────────────────────────────┘
+
+Multi-cluster:
+  cluster-A: kubepocket ──→ ┐
+  cluster-B: kubepocket ──→ ├──→ shared PostgreSQL ←── exporter ←── Grafana
+  cluster-C: kubepocket ──→ ┘
 ```
 
 ---

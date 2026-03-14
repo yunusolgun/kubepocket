@@ -17,7 +17,7 @@
 ./install.sh
 ```
 
-The script handles everything automatically:
+The script automatically detects your local environment (minikube, docker-desktop, or other) and handles everything:
 - Docker image build
 - Prometheus + Grafana installation
 - KubePocket Helm installation
@@ -27,17 +27,26 @@ The script handles everything automatically:
 
 ## Manual Installation (Step by Step)
 
-### 1 — Start Minikube
+### 1 — Start your local cluster
 
+**Minikube:**
 ```bash
 minikube start --cpus=2 --memory=4096 --driver=docker
 ```
 
+**Docker Desktop:** Enable Kubernetes in Docker Desktop → Settings → Kubernetes → Enable Kubernetes.
+
 ### 2 — Build the image
 
+**Minikube:**
 ```bash
 eval $(minikube docker-env)
 docker build -t kubepocket:local -f docker/Dockerfile .
+```
+
+**Docker Desktop:**
+```bash
+docker build --platform linux/amd64 -t kubepocket:local -f docker/Dockerfile .
 ```
 
 ### 3 — Update Helm dependencies
@@ -48,16 +57,25 @@ helm dependency update ./helm/kubepocket
 
 ### 4 — Install Prometheus + Grafana
 
+**Minikube:**
 ```bash
 helm install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
   --create-namespace \
   --set grafana.adminPassword=admin123 \
-  --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
+  --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
+  --wait --timeout 10m
+```
 
-kubectl wait --for=condition=ready pod \
-  -l app.kubernetes.io/name=prometheus \
-  -n monitoring --timeout=180s
+**Docker Desktop** (node-exporter is not supported on Docker Desktop):
+```bash
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --create-namespace \
+  --set grafana.adminPassword=admin123 \
+  --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
+  --set nodeExporter.enabled=false \
+  --wait --timeout 10m
 ```
 
 ### 5 — Install KubePocket
@@ -74,11 +92,8 @@ helm install kubepocket ./helm/kubepocket \
   --set clusterName=minikube-local \
   --set allowedOrigins=http://localhost:3000 \
   --set serviceMonitor.enabled=true \
-  --set postgresql.auth.password=kubepocket123
-
-kubectl wait --for=condition=ready pod \
-  -l app.kubernetes.io/name=kubepocket \
-  -n kubepocket --timeout=120s
+  --set postgresql.auth.password=kubepocket123 \
+  --wait --timeout 5m
 ```
 
 ### 6 — Get the API key
@@ -129,26 +144,76 @@ MODE=production \
   CLUSTER_NAME=prod-eu-west \
   GRAFANA_URL=http://grafana.internal \
   GRAFANA_PASSWORD=yourpassword \
+  LICENSE_KEY=kp_... \
   ./install.sh
 ```
 
 ### install.sh Environment Variables
 
-| Variable               | Default                     | Description                                     |
-|------------------------|-----------------------------|-------------------------------------------------|
-| `MODE`                 | `local`                     | `local` or `production`                         |
-| `CLUSTER_NAME`         | `minikube-local`            | Cluster identifier                              |
-| `IMAGE_REPOSITORY`     | `kubepocket/kubepocket`     | Container image repository                      |
-| `IMAGE_TAG`            | `3.0.0`                     | Container image tag                             |
-| `EXISTING_STACK`       | `false`                     | Use an existing Prometheus/Grafana stack        |
-| `MONITORING_NAMESPACE` | `monitoring`                | Namespace of the monitoring stack               |
-| `GRAFANA_URL`          | `http://localhost:3000`     | Grafana base URL                                |
-| `GRAFANA_USER`         | `admin`                     | Grafana admin username                          |
-| `GRAFANA_PASSWORD`     | `admin123`                  | Grafana admin password                          |
-| `DASHBOARD_FILE`       | `kubepocket-dashboard.json` | Path to the dashboard JSON file                 |
-| `GRAFANA_IMPORT`       | `false`                     | Force dashboard import even with existing stack |
-| `ALLOWED_ORIGINS`      | `http://localhost:3000/*`   | CORS allowed origins                            |
-| `PG_PASSWORD`          | `kubepocket123`             | PostgreSQL password                             |
+| Variable               | Default                     | Description                                            |
+|------------------------|-----------------------------|--------------------------------------------------------|
+| `MODE`                 | `local`                     | `local` or `production`                                |
+| `LOCAL_DRIVER`         | auto-detected               | `minikube`, `docker-desktop`, or `none`                |
+| `CLUSTER_NAME`         | `minikube-local`            | Cluster identifier shown in dashboards                 |
+| `IMAGE_REPOSITORY`     | `kubepocket/kubepocket`     | Container image repository                             |
+| `IMAGE_TAG`            | `3.0.0`                     | Container image tag                                    |
+| `EXISTING_STACK`       | `false`                     | Use an existing Prometheus/Grafana stack               |
+| `MONITORING_NAMESPACE` | `monitoring`                | Namespace of the monitoring stack                      |
+| `GRAFANA_URL`          | `http://localhost:3000`     | Grafana base URL                                       |
+| `GRAFANA_USER`         | `admin`                     | Grafana admin username                                 |
+| `GRAFANA_PASSWORD`     | `admin123`                  | Grafana admin password                                 |
+| `DASHBOARD_FILE`       | `kubepocket-dashboard.json` | Path to the dashboard JSON file                        |
+| `GRAFANA_IMPORT`       | `false`                     | Force dashboard import even with existing stack        |
+| `ALLOWED_ORIGINS`      | `http://localhost:3000/*`   | CORS allowed origins                                   |
+| `PG_PASSWORD`          | `kubepocket123`             | PostgreSQL password                                    |
+| `LICENSE_KEY`          | *(empty)*                   | KubePocket Pro license key (empty = free tier)         |
+| `HELM_TIMEOUT`         | `10m`                       | Helm install/upgrade timeout (increase for slow clusters) |
+
+---
+
+## Multi-Cluster Setup
+
+KubePocket supports monitoring multiple Kubernetes clusters from a single Grafana dashboard. All clusters share the same PostgreSQL database; each cluster runs its own KubePocket instance identified by a unique `CLUSTER_NAME`.
+
+```
+cluster-eu  →  KubePocket (CLUSTER_NAME=prod-eu)  ┐
+cluster-us  →  KubePocket (CLUSTER_NAME=prod-us)  ├──→  Shared PostgreSQL  ←──  Grafana
+cluster-stg →  KubePocket (CLUSTER_NAME=staging)  ┘
+```
+
+**Primary cluster** (hosts the database and Grafana):
+```bash
+MODE=production \
+  CLUSTER_NAME=prod-eu \
+  IMAGE_REPOSITORY=your-registry/kubepocket \
+  IMAGE_TAG=3.0.0 \
+  ./install.sh
+```
+
+**Additional clusters** (connect to the primary database):
+```bash
+MODE=production \
+  CLUSTER_NAME=prod-us \
+  IMAGE_REPOSITORY=your-registry/kubepocket \
+  IMAGE_TAG=3.0.0 \
+  EXISTING_STACK=true \
+  ./install.sh
+```
+
+Set `externalDatabase` in `values.yaml` for additional clusters:
+```yaml
+postgresql:
+  enabled: false
+
+externalDatabase:
+  host: "prod-eu-postgresql.kubepocket.svc.cluster.local"
+  port: 5432
+  username: kubepocket
+  password: kubepocket123
+  database: kubepocket
+```
+
+Once connected, the Grafana dashboard shows a **Cluster** dropdown to switch between clusters or view all at once.
 
 ---
 
@@ -165,9 +230,6 @@ MODE=production \
 | Alerts            | ✅        | ✅         |
 | Anomaly Detection | ✅        | ✅         |
 | Forecast          | ✅        | ✅         |
-
-
-
 
 ### Applying a license key
 
@@ -223,8 +285,14 @@ kubectl get pods -n default
 ## Upgrading
 
 ```bash
+# Minikube
 eval $(minikube docker-env)
 docker build --no-cache -t kubepocket:local -f docker/Dockerfile .
+
+# Docker Desktop
+docker build --no-cache --platform linux/amd64 -t kubepocket:local -f docker/Dockerfile .
+
+# Apply
 kubectl rollout restart deployment/kubepocket -n kubepocket
 kubectl rollout status deployment/kubepocket -n kubepocket
 ```
@@ -253,7 +321,7 @@ helm status monitoring -n monitoring
 # Remove everything
 helm uninstall kubepocket -n kubepocket
 helm uninstall monitoring -n monitoring
-minikube delete
+kubectl delete namespace kubepocket monitoring
 ```
 
 ---
@@ -296,6 +364,14 @@ kubectl get servicemonitor kubepocket -n kubepocket -o yaml | grep "release:"
 kubectl exec -n kubepocket deploy/kubepocket -- cat /var/log/kubepocket/collector.log
 ```
 
+**node-exporter CrashLoopBackOff on Docker Desktop:**
+
+This is a known Docker Desktop limitation. Install with `--set nodeExporter.enabled=false` or use `./install.sh` which handles this automatically.
+
 **Duplicate series in Grafana after rollout:**
 
 Stale series from old pods may appear for a few minutes after a deployment rollout. Values remain correct because `avg by` aggregation is active — only extra legend entries are shown briefly and disappear on their own.
+
+**New cluster not appearing in Grafana dropdown:**
+
+The Cluster dropdown is populated from Prometheus label values. After adding a new cluster, wait for at least one Prometheus scrape cycle (~30 seconds) for it to appear.
