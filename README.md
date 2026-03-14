@@ -15,6 +15,7 @@ KubePocket is a lightweight, easy-to-install monitoring solution for Kubernetes 
 - **Anomaly detection & forecasting** — z-score based alerts and 7-day CPU forecasts
 - **Multi-cluster support** — monitor multiple clusters from a single Grafana dashboard
 - **Prometheus metrics exporter** for Grafana integration
+- **Webhook notifications** — send alerts to Slack, Microsoft Teams, or any HTTP endpoint
 - **Offline RSA license system** — no license server required
 - **Zero configuration** — works out of the box with minikube, Docker Desktop, or any cluster
 
@@ -58,6 +59,33 @@ cluster-stg →  KubePocket (CLUSTER_NAME=staging)  ┘
 ```
 
 See [INSTALL.md — Multi-Cluster Setup](INSTALL.md#multi-cluster-setup) for details.
+
+---
+
+## 🔔 Webhook Notifications
+
+KubePocket can send alert notifications to Slack, Microsoft Teams, or any generic HTTP endpoint. Each provider is optional and multiple providers can be active simultaneously. Notifications are sent only once per alert — no duplicate messages.
+
+### Supported providers
+
+| Provider         | Environment Variable                  |
+|------------------|---------------------------------------|
+| Slack            | `KUBEPOCKET_SLACK_WEBHOOK_URL`        |
+| Microsoft Teams  | `KUBEPOCKET_TEAMS_WEBHOOK_URL`        |
+| Generic HTTP POST| `KUBEPOCKET_WEBHOOK_URL`              |
+
+### Quick setup
+
+```bash
+helm upgrade kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --reuse-values \
+  --set webhook.slackUrl="https://hooks.slack.com/services/..."
+```
+
+Set `webhook.minSeverity` to `critical` to only receive notifications for critical alerts (default: `warning`).
+
+See [INSTALL.md — Webhook Notifications](INSTALL.md#webhook-notifications) for full documentation.
 
 ---
 

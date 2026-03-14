@@ -217,6 +217,81 @@ Once connected, the Grafana dashboard shows a **Cluster** dropdown to switch bet
 
 ---
 
+## Webhook Notifications
+
+KubePocket sends alert notifications to Slack, Microsoft Teams, or any generic HTTP endpoint. Notifications are deduplicated — the same alert is never sent twice.
+
+### Slack
+
+1. Go to https://api.slack.com/apps and create a new app.
+2. Enable **Incoming Webhooks** and add a webhook to your workspace.
+3. Copy the webhook URL (`https://hooks.slack.com/services/...`).
+
+```bash
+helm upgrade kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --reuse-values \
+  --set webhook.slackUrl="https://hooks.slack.com/services/T.../B.../..."
+```
+
+### Microsoft Teams
+
+1. In your Teams channel, go to **Connectors → Incoming Webhook**.
+2. Create a webhook and copy the URL.
+
+```bash
+helm upgrade kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --reuse-values \
+  --set webhook.teamsUrl="https://outlook.office.com/webhook/..."
+```
+
+### Generic HTTP POST
+
+Any endpoint that accepts a JSON POST request:
+
+```bash
+helm upgrade kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --reuse-values \
+  --set webhook.genericUrl="https://your-endpoint.com/alerts"
+```
+
+Payload format:
+```json
+{
+  "cluster":    "prod-eu",
+  "severity":   "critical",
+  "namespace":  "payments",
+  "message":    "Pod payments-api restarted 10 times",
+  "created_at": "2026-03-14T12:00:00"
+}
+```
+
+### Configuration
+
+| values.yaml key          | Environment Variable                   | Default    | Description                              |
+|--------------------------|----------------------------------------|------------|------------------------------------------|
+| `webhook.slackUrl`       | `KUBEPOCKET_SLACK_WEBHOOK_URL`         | *(empty)*  | Slack Incoming Webhook URL               |
+| `webhook.teamsUrl`       | `KUBEPOCKET_TEAMS_WEBHOOK_URL`         | *(empty)*  | Microsoft Teams Incoming Webhook URL     |
+| `webhook.genericUrl`     | `KUBEPOCKET_WEBHOOK_URL`               | *(empty)*  | Generic HTTP POST endpoint               |
+| `webhook.minSeverity`    | `KUBEPOCKET_WEBHOOK_MIN_SEVERITY`      | `warning`  | Minimum severity: `warning` or `critical`|
+
+### Multiple providers
+
+All three providers can be active simultaneously:
+
+```bash
+helm upgrade kubepocket ./helm/kubepocket \
+  --namespace kubepocket \
+  --reuse-values \
+  --set webhook.slackUrl="https://hooks.slack.com/services/..." \
+  --set webhook.teamsUrl="https://outlook.office.com/webhook/..." \
+  --set webhook.minSeverity="critical"
+```
+
+---
+
 ## Licensing
 
 ### Tier Comparison

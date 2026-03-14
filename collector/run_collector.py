@@ -4,6 +4,7 @@ from db.models import init_db, SessionLocal
 from db.repository import MetricRepository
 from collector.event_collector import EventCollector
 from collector.k8s_client import K8sClient
+from collector.webhook import notify_new_alerts
 import sys
 import os
 import time
@@ -140,6 +141,8 @@ def collect_once(context=None):
         cluster = repo.get_or_create_cluster(
             CLUSTER_NAME, context or 'in-cluster')
 
+        new_alert_ids = []  # track newly created alerts for webhook
+
         print("\nCollecting metrics...")
         metrics = k8s.collect_all_metrics_with_usage()
 
@@ -171,8 +174,10 @@ def collect_once(context=None):
 
         problematic = k8s.get_high_restart_pods(threshold=5)
         for p in problematic:
-            repo.create_alert(cluster.id, p['namespace'],
-                              f"Pod {p['pod_name']} restarted {p['restarts']} times", 'warning')
+            alert = repo.create_alert(cluster.id, p['namespace'],
+                                      f"Pod {p['pod_name']} restarted {p['restarts']} times", 'warning')
+            if alert:
+                new_alert_ids.append(alert.id)
 
         # PVC alert checks
         try:
@@ -193,34 +198,40 @@ def collect_once(context=None):
                     existing = next((a for a in active_pvc_alerts
                                      if pvc['name'] in a.message and 'not bound' in a.message), None)
                     if not existing:
-                        repo.create_alert(
+                        a = repo.create_alert(
                             cluster.id, pvc['namespace'],
                             f"PVC {pvc['name']} is not bound (phase: {pvc['phase']})",
                             'critical'
                         )
+                        if a:
+                            new_alert_ids.append(a.id)
                 if pvc['used_pct'] is not None:
                     if pvc['used_pct'] >= 90:
                         triggering_pvcs.add(pvc['name'])
                         existing = next((a for a in active_pvc_alerts
                                          if pvc['name'] in a.message and 'full' in a.message), None)
                         if not existing:
-                            repo.create_alert(
+                            a = repo.create_alert(
                                 cluster.id, pvc['namespace'],
                                 f"PVC {pvc['name']} is {pvc['used_pct']}% full "
                                 f"({pvc['actual_gib']:.2f}/{pvc['capacity_gib']:.2f} GiB)",
                                 'critical'
                             )
+                            if a:
+                                new_alert_ids.append(a.id)
                     elif pvc['used_pct'] >= 75:
                         triggering_pvcs.add(pvc['name'])
                         existing = next((a for a in active_pvc_alerts
                                          if pvc['name'] in a.message and 'full' in a.message), None)
                         if not existing:
-                            repo.create_alert(
+                            a = repo.create_alert(
                                 cluster.id, pvc['namespace'],
                                 f"PVC {pvc['name']} is {pvc['used_pct']}% full "
                                 f"({pvc['actual_gib']:.2f}/{pvc['capacity_gib']:.2f} GiB)",
                                 'warning'
                             )
+                            if a:
+                                new_alert_ids.append(a.id)
 
             resolved = 0
             for alert in active_pvc_alerts:
@@ -243,6 +254,12 @@ def collect_once(context=None):
             print(f"  Warning: PVC alert check failed: {e}")
 
         active_alerts = repo.get_active_alerts(cluster.id)
+        # Send webhook notifications for new alerts
+        try:
+            notify_new_alerts(db, new_alert_ids)
+        except Exception as e:
+            print(f"  Warning: Webhook notification failed: {e}")
+
         print(f"\n{'='*50}")
         print(f"Done!")
         print(f"  Namespaces: {len(metrics)}")

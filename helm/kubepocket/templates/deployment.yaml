@@ -16,7 +16,7 @@ spec:
     spec:
       serviceAccountName: {{ include "kubepocket.fullname" . }}-collector
 
-      # PostgreSQL hazır olana kadar bekle
+      # Wait for PostgreSQL to be ready
       initContainers:
       - name: wait-for-postgres
         image: busybox
@@ -48,6 +48,20 @@ spec:
           value: {{ .Values.allowedOrigins | default "http://localhost:3000" }}
         - name: KUBEPOCKET_LICENSE_KEY
           value: {{ .Values.licenseKey | default "" | quote }}
+        {{- if .Values.webhook.slackUrl }}
+        - name: KUBEPOCKET_SLACK_WEBHOOK_URL
+          value: {{ .Values.webhook.slackUrl | quote }}
+        {{- end }}
+        {{- if .Values.webhook.teamsUrl }}
+        - name: KUBEPOCKET_TEAMS_WEBHOOK_URL
+          value: {{ .Values.webhook.teamsUrl | quote }}
+        {{- end }}
+        {{- if .Values.webhook.genericUrl }}
+        - name: KUBEPOCKET_WEBHOOK_URL
+          value: {{ .Values.webhook.genericUrl | quote }}
+        {{- end }}
+        - name: KUBEPOCKET_WEBHOOK_MIN_SEVERITY
+          value: {{ .Values.webhook.minSeverity | default "warning" | quote }}
 
         ports:
         - name: api

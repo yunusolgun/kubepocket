@@ -55,6 +55,8 @@ class Alert(Base):
     message = Column(Text)
     severity = Column(String(50), default='warning')
     resolved = Column(Boolean, default=False)
+    # True after webhook notification sent
+    webhook_sent = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
