@@ -1,4 +1,7 @@
 # api/routes/nodes.py
+# Note: This endpoint queries the local cluster's Kubernetes API directly.
+# In a multi-cluster setup, each cluster's KubePocket instance exposes
+# its own /api/nodes endpoint for that cluster's node data.
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 import sys, os
@@ -14,20 +17,20 @@ router = APIRouter()
 
 @router.get("/")
 async def get_nodes(_auth: ApiKey = Depends(get_current_key)):
-    """Node bazlı kapasite, allocatable, kullanım ve pod dağılımı."""
+    """Node capacity, allocatable resources, usage and pod distribution for the local cluster."""
     try:
         k8s = K8sClient()
         nodes = k8s.collect_node_metrics()
         return {
             'nodes': nodes,
             'summary': {
-                'total_nodes': len(nodes),
-                'ready_nodes': sum(1 for n in nodes if n['ready']),
-                'total_cpu_capacity': round(sum(n['cpu_capacity'] for n in nodes), 2),
-                'total_cpu_requested': round(sum(n['cpu_requested'] for n in nodes), 2),
-                'total_mem_capacity_gib': round(sum(n['mem_capacity_gib'] for n in nodes), 2),
-                'total_mem_requested_gib': round(sum(n['mem_requested_gib'] for n in nodes), 2),
-                'total_pods_running': sum(n['pods_running'] for n in nodes),
+                'total_nodes':           len(nodes),
+                'ready_nodes':           sum(1 for n in nodes if n['ready']),
+                'total_cpu_capacity':    round(sum(n['cpu_capacity']       for n in nodes), 2),
+                'total_cpu_requested':   round(sum(n['cpu_requested']      for n in nodes), 2),
+                'total_mem_capacity_gib':  round(sum(n['mem_capacity_gib']   for n in nodes), 2),
+                'total_mem_requested_gib': round(sum(n['mem_requested_gib']  for n in nodes), 2),
+                'total_pods_running':    sum(n['pods_running'] for n in nodes),
             }
         }
     except Exception as e:
