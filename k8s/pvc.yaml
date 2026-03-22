@@ -1,0 +1,14 @@
+# k8s/pvc.yaml - Persistent Volume Claim for database
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubepocket-data
+  namespace: kubepocket
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  # Use appropriate storage class for your cloud provider
+  storageClassName: standard

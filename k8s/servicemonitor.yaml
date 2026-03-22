@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kubepocket
+  namespace: monitoring
+  labels:
+    app: kubepocket
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: kubepocket
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+    - kubepocket

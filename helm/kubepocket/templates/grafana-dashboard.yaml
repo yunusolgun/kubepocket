@@ -1,0 +1,22 @@
+{{- if .Values.monitoring.grafanaDashboard.enabled }}
+# Dashboard ConfigMap — loaded automatically by the Grafana sidecar.
+# The dashboard JSON is bundled inside the Helm chart (files/kubepocket-dashboard.json).
+# No external file is required at install time.
+#
+# Enable with:
+#   --set monitoring.grafanaDashboard.enabled=true \
+#   --set monitoring.grafanaDashboard.namespace=monitoring
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kubepocket.fullname" . }}-dashboard
+  namespace: {{ .Values.monitoring.grafanaDashboard.namespace | default "monitoring" }}
+  labels:
+    {{- include "kubepocket.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+    {{- if .Values.monitoring.grafanaDashboard.folder }}
+    grafana_folder: {{ .Values.monitoring.grafanaDashboard.folder | quote }}
+    {{- end }}
+data:
+  kubepocket-dashboard.json: {{ .Files.Get "files/kubepocket-dashboard.json" | toJson }}
+{{- end }}

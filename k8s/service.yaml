@@ -1,0 +1,35 @@
+# k8s/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubepocket
+  namespace: kubepocket
+  labels:
+    app: kubepocket
+spec:
+  type: ClusterIP
+  ports:
+    - name: api
+      port: 8000
+      targetPort: api
+    - name: metrics
+      port: 8001
+      targetPort: metrics
+  selector:
+    app: kubepocket
+---
+# Separate service for Prometheus metrics (easier monitoring)
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubepocket-metrics
+  namespace: kubepocket
+  labels:
+    app: kubepocket
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8001
+      targetPort: metrics
+  selector:
+    app: kubepocket

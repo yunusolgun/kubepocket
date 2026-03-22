@@ -1,0 +1,22 @@
+# OOMKilled olan pod — memory limitini aşıp öldürülür, sürekli restart alır
+apiVersion: v1
+kind: Pod
+metadata:
+  name: oom-pod
+  namespace: default
+  labels:
+    scenario: oom
+spec:
+  containers:
+  - name: memory-eater
+    image: polinux/stress
+    command: ["stress"]
+    args: ["--vm", "1", "--vm-bytes", "200M", "--timeout", "30s"]
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "100m"
+        memory: "100Mi"   # 100Mi limit ama 200Mi kullanmaya çalışıyor → OOMKilled
+  restartPolicy: Always

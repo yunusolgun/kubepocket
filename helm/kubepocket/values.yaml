@@ -1,0 +1,192 @@
+# helm/kubepocket/values.yaml
+# KubePocket v3.0.0
+
+# =============================================
+# License Key
+# Leave empty for Free tier (4 namespaces, 1 cluster).
+# A purchased Pro key can be set here or passed via
+# the KUBEPOCKET_LICENSE_KEY environment variable.
+# =============================================
+
+# =============================================
+# Webhook Notifications
+#
+# KubePocket can send alert notifications to
+# Slack, Microsoft Teams, or any generic webhook.
+#
+# Multiple providers can be active simultaneously.
+# Leave empty to disable.
+#
+# KUBEPOCKET_WEBHOOK_MIN_SEVERITY:
+#   warning  — notify on warning + critical (default)
+#   critical — notify on critical only
+#
+# Weekly Report:
+# KUBEPOCKET_WEEKLY_REPORT_DAY:
+#   0=Monday ... 6=Sunday (default: 0 = Monday)
+# KUBEPOCKET_WEEKLY_REPORT_HOUR:
+#   0-23 UTC (default: 9 = 09:00 UTC)
+# =============================================
+webhook:
+  slackUrl: ""       # Slack Incoming Webhook URL
+  teamsUrl: ""       # Microsoft Teams Incoming Webhook URL
+  genericUrl: ""     # Generic HTTP POST endpoint
+  minSeverity: "warning"   # warning | critical
+
+  weeklyReport:
+    enabled: true
+    day: 0           # 0=Monday ... 6=Sunday
+    hour: 9          # UTC hour (0-23)
+
+licenseKey: ""
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/yunusolgun/kubepocket
+  tag: 3.0.0
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+clusterName: "default"
+allowedOrigins: "http://localhost:3000"
+logLevel: INFO
+
+collector:
+  interval: 300
+  logLevel: INFO
+  statsInterval: 3600
+
+anomaly:
+  enabled: true
+  zScoreThreshold: 3.0
+  minDataPoints: 10
+
+forecast:
+  enabled: true
+  horizonDays: 7
+  minConfidence: 0.5
+
+# =============================================
+# PostgreSQL (Bitnami subchart)
+# enabled: true  → deploy PostgreSQL via Helm
+# enabled: false → use externalDatabase instead
+# =============================================
+postgresql:
+  enabled: true
+
+  image:
+    tag: latest
+
+  auth:
+    username: kubepocket
+    password: kubepocket
+    database: kubepocket
+
+  primary:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# External PostgreSQL (only used when postgresql.enabled=false)
+externalDatabase:
+  host: ""
+  port: 5432
+  username: kubepocket
+  password: kubepocket
+  database: kubepocket
+
+service:
+  apiPort: 8000
+  metricsPort: 8001
+  type: ClusterIP
+
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 200m
+  limits:
+    memory: 1Gi
+    cpu: 500m
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podSecurityContext: {}
+securityContext: {}
+
+rbac:
+  create: true
+  extraRules: []
+
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
+  labels: {}
+  metricRelabelings: []
+
+# =============================================
+# Monitoring integration
+#
+# existingStack: false (default)
+#   → install.sh installs kube-prometheus-stack in the
+#     monitoring namespace, including Grafana + Prometheus.
+#
+# existingStack: true
+#   → Integrates with the customer's existing Prometheus/Grafana.
+#     Grafana and Prometheus are NOT installed.
+#   - Set serviceMonitor.enabled: true to deploy the ServiceMonitor
+#     into the customer's Prometheus namespace.
+#   - Set grafanaDashboard.enabled: true to load the dashboard
+#     automatically via Grafana sidecar (ConfigMap).
+# =============================================
+monitoring:
+  existingStack: false
+
+  # Namespace of the customer's Prometheus instance.
+  # The ServiceMonitor is deployed here when existingStack: true.
+  namespace: "monitoring"
+
+  # Grafana dashboard — deployed as a ConfigMap.
+  # Requires Grafana sidecar (grafana.sidecar.dashboards.enabled=true).
+  grafanaDashboard:
+    enabled: false
+    namespace: "monitoring"
+    folder: "KubePocket"
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+networkPolicy:
+  enabled: false
+
+podAnnotations: {}
+podLabels: {}
+priorityClassName: ""
+terminationGracePeriodSeconds: 30
+extraEnv: []
+extraVolumes: []
+extraVolumeMounts: []
+watchNamespace: ""

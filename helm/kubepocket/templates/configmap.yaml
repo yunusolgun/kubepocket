@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kubepocket.fullname" . }}-config
+  labels:
+    {{- include "kubepocket.labels" . | nindent 4 }}
+data:
+  settings.yaml: |
+{{ .Values.config | toYaml | indent 4 }}

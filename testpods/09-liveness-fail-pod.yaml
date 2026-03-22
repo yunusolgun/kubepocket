@@ -1,0 +1,27 @@
+# Liveness probe sürekli başarısız → pod sürekli restart alır ama çökmez
+apiVersion: v1
+kind: Pod
+metadata:
+  name: liveness-fail-pod
+  namespace: default
+  labels:
+    scenario: liveness-fail
+spec:
+  containers:
+  - name: liveness-fail
+    image: busybox
+    command: ["sh", "-c", "sleep 3600"]
+    livenessProbe:
+      exec:
+        command: ["cat", "/tmp/healthy"]   # Bu dosya hiç oluşturulmaz → probe fail
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      failureThreshold: 2
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "32Mi"
+      limits:
+        cpu: "100m"
+        memory: "64Mi"
+  restartPolicy: Always

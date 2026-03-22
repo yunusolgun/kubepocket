@@ -1,0 +1,100 @@
+# api/main.py
+from api.routes import metrics, alerts, clusters, apikeys, cost, events, nodes, storage, license as license_route
+from api.auth import create_api_key
+from db.models import init_db, SessionLocal
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+app = FastAPI(
+    title="KubePocket API",
+    description="Kubernetes resource monitoring API",
+    version="4.0.0"
+)
+
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+    # License kontrolü
+    try:
+        from licensing.license import verify_license
+        import os
+        lic = verify_license(os.getenv('KUBEPOCKET_LICENSE_KEY', ''))
+        if lic.valid:
+            ns = "unlimited" if lic.is_unlimited_namespaces() else lic.namespace_limit
+            print(
+                f"🔑 License: {lic.tier.upper()} — {lic.customer} (namespaces: {ns})")
+        else:
+            print(f"⚠️  License invalid: {lic.error} — running Free tier")
+    except ImportError:
+        pass
+
+    from db.models import ApiKey
+    db = SessionLocal()
+    try:
+        key_count = db.query(ApiKey).count()
+        if key_count == 0:
+            raw_key = create_api_key(db, name="initial-admin-key")
+            print("=" * 60)
+            print("API KEY CREATED")
+            print(f"   Key: {raw_key}")
+            print("   Copy this key now — it won't be shown again.")
+            print("=" * 60)
+    finally:
+        db.close()
+
+
+app.include_router(metrics.router,
+                   prefix="/api/metrics",  tags=["metrics"])
+app.include_router(alerts.router,
+                   prefix="/api/alerts",   tags=["alerts"])
+app.include_router(clusters.router,
+                   prefix="/api/clusters", tags=["clusters"])
+app.include_router(apikeys.router,       prefix="/api/keys",
+                   tags=["api-keys"])
+app.include_router(cost.router,          prefix="/api/cost",     tags=["cost"])
+app.include_router(events.router,
+                   prefix="/api/events",   tags=["events"])
+app.include_router(
+    nodes.router,         prefix="/api/nodes",    tags=["nodes"])
+app.include_router(storage.router,
+                   prefix="/api/storage",  tags=["storage"])
+app.include_router(license_route.router,
+                   prefix="/api/license",  tags=["license"])
+
+
+@app.get("/")
+async def root():
+    return {
+        "service": "KubePocket API",
+        "version": "4.0.0",
+        "status": "running",
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
