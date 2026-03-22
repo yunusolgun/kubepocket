@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KubePocket — Kubernetes Cost & Resource Monitor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #e6edf3; }
+
+    header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.4rem; font-weight: 700; color: #58a6ff; }
+    header nav a { color: #8b949e; text-decoration: none; margin-left: 24px; font-size: 0.9rem; }
+    header nav a:hover { color: #e6edf3; }
+
+    .hero { text-align: center; padding: 80px 32px 60px; }
+    .hero h2 { font-size: 2.8rem; font-weight: 800; margin-bottom: 16px; line-height: 1.2; }
+    .hero h2 span { color: #58a6ff; }
+    .hero p { font-size: 1.15rem; color: #8b949e; max-width: 600px; margin: 0 auto 40px; line-height: 1.7; }
+    .hero .badges { margin-bottom: 40px; }
+    .hero .badges img { margin: 0 4px; }
+    .btn { display: inline-block; padding: 12px 28px; border-radius: 8px; font-size: 1rem; font-weight: 600; text-decoration: none; margin: 6px; }
+    .btn-primary { background: #238636; color: #fff; }
+    .btn-primary:hover { background: #2ea043; }
+    .btn-secondary { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
+    .btn-secondary:hover { background: #30363d; }
+
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; max-width: 1100px; margin: 0 auto; padding: 0 32px 80px; }
+    .feature { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 28px; }
+    .feature .icon { font-size: 2rem; margin-bottom: 12px; }
+    .feature h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; color: #e6edf3; }
+    .feature p { font-size: 0.9rem; color: #8b949e; line-height: 1.6; }
+
+    .tiers { max-width: 900px; margin: 0 auto; padding: 0 32px 80px; }
+    .tiers h2 { text-align: center; font-size: 2rem; font-weight: 800; margin-bottom: 40px; }
+    .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .tier { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 32px; }
+    .tier.pro { border-color: #58a6ff; }
+    .tier h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+    .tier .price { font-size: 0.9rem; color: #8b949e; margin-bottom: 24px; }
+    .tier ul { list-style: none; }
+    .tier ul li { padding: 6px 0; font-size: 0.95rem; color: #8b949e; }
+    .tier ul li::before { content: '✓  '; color: #3fb950; font-weight: 700; }
+    .tier ul li.na { color: #484f58; }
+    .tier ul li.na::before { content: '✗  '; color: #484f58; }
+
+    .install { background: #161b22; border-top: 1px solid #30363d; border-bottom: 1px solid #30363d; padding: 60px 32px; text-align: center; }
+    .install h2 { font-size: 2rem; font-weight: 800; margin-bottom: 32px; }
+    .code { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 20px 28px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.95rem; color: #79c0ff; text-align: left; max-width: 800px; margin: 0 auto 16px; overflow-x: auto; white-space: nowrap; }
+
+    .contact { text-align: center; padding: 60px 32px 80px; }
+    .contact h2 { font-size: 2rem; font-weight: 800; margin-bottom: 16px; }
+    .contact p { color: #8b949e; margin-bottom: 24px; font-size: 1rem; }
+    .contact a { color: #58a6ff; }
+
+    footer { background: #161b22; border-top: 1px solid #30363d; padding: 24px 32px; text-align: center; color: #484f58; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ KubePocket</h1>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#install">Install</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#contact">Contact</a>
+    <a href="https://github.com/yunusolgun/kubepocket">GitHub</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="badges">
+    <img src="https://img.shields.io/badge/version-3.0.0-blue.svg" alt="version" />
+    <img src="https://img.shields.io/badge/license-Commercial-green.svg" alt="license" />
+  </div>
+  <h2>Kubernetes <span>Cost & Resource</span> Monitoring</h2>
+  <p>Lightweight, easy-to-install monitoring for Kubernetes clusters. Understand your cloud bill, detect anomalies, and optimize resource usage — all from a single Grafana dashboard.</p>
+  <a href="https://github.com/yunusolgun/kubepocket" class="btn btn-primary">Get Started</a>
+  <a href="#install" class="btn btn-secondary">Quick Install</a>
+</section>
+
+<section class="features" id="features">
+  <div class="feature">
+    <div class="icon">📊</div>
+    <h3>Real-time Monitoring</h3>
+    <p>Track CPU, memory, and pod restarts across namespaces in real time with Grafana dashboards.</p>
+  </div>
+  <div class="feature">
+    <div class="icon">🔍</div>
+    <h3>Anomaly Detection</h3>
+    <p>Z-score based anomaly detection with 7-day CPU and memory forecasting.</p>
+  </div>
+  <div class="feature">
+    <div class="icon">🌐</div>
+    <h3>Multi-Cluster</h3>
+    <p>Monitor multiple clusters from a single shared PostgreSQL database and Grafana dashboard.</p>
+  </div>
+  <div class="feature">
+    <div class="icon">🔔</div>
+    <h3>Webhook Notifications</h3>
+    <p>Send alerts to Slack, Microsoft Teams, or any HTTP endpoint. Weekly summary reports included.</p>
+  </div>
+  <div class="feature">
+    <div class="icon">💰</div>
+    <h3>Cost Optimization</h3>
+    <p>Identify wasted resources and get per-namespace relative cost breakdown.</p>
+  </div>
+  <div class="feature">
+    <div class="icon">🔑</div>
+    <h3>Offline License</h3>
+    <p>RSA-signed license keys verified entirely offline. No license server, no internet required.</p>
+  </div>
+</section>
+
+<section class="install" id="install">
+  <h2>Quick Install</h2>
+
+  <p style="color:#8b949e; margin-bottom: 12px; font-size:0.95rem; font-weight:600;">Option 1 — Script (recommended for local development)</p>
+  <div class="code">git clone https://github.com/yunusolgun/kubepocket.git<br>cd kubepocket<br>./install.sh</div>
+  <p style="color:#8b949e; margin-bottom: 32px;">Auto-detects minikube, Docker Desktop, or any Kubernetes cluster.</p>
+
+  <p style="color:#8b949e; margin-bottom: 12px; font-size:0.95rem; font-weight:600;">Option 2 — Helm (recommended for production)</p>
+  <div class="code">
+# 1. Install Prometheus + Grafana (required for ServiceMonitor CRDs)<br>
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts<br>
+helm repo update<br>
+helm install monitoring prometheus-community/kube-prometheus-stack \<br>
+&nbsp;&nbsp;--namespace monitoring --create-namespace \<br>
+&nbsp;&nbsp;--set grafana.adminPassword=admin123 \<br>
+&nbsp;&nbsp;--wait --timeout 10m<br>
+<br>
+# 2. Install KubePocket (dashboard auto-imported into Grafana)<br>
+helm repo add kubepocket https://yunusolgun.github.io/kubepocket<br>
+helm repo update<br>
+helm install kubepocket kubepocket/kubepocket \<br>
+&nbsp;&nbsp;--namespace kubepocket --create-namespace \<br>
+&nbsp;&nbsp;--set monitoring.grafanaDashboard.enabled=true \<br>
+&nbsp;&nbsp;--set monitoring.grafanaDashboard.namespace=monitoring \<br>
+&nbsp;&nbsp;--wait --timeout 10m
+  </div>
+  <p style="color:#8b949e; margin-top: 8px; font-size:0.85rem;">Already have Prometheus installed? See <a href="https://github.com/yunusolgun/kubepocket/blob/master/INSTALL.md" style="color:#58a6ff;">INSTALL.md</a> for existing stack integration.</p>
+</section>
+
+<section class="tiers" id="pricing">
+  <h2>Pricing</h2>
+  <div class="tier-grid">
+    <div class="tier">
+      <h3>Free</h3>
+      <p class="price">Community — always free, 30-day trial included</p>
+      <ul>
+        <li>1 cluster</li>
+        <li>Up to 4 namespaces</li>
+        <li>30-day data retention</li>
+        <li>Metrics, alerts, anomaly detection</li>
+        <li>Grafana dashboard</li>
+        <li>Webhook notifications</li>
+        <li>Weekly summary reports</li>
+        <li class="na">Unlimited clusters</li>
+        <li class="na">Unlimited namespaces</li>
+        <li class="na">365-day retention</li>
+      </ul>
+    </div>
+    <div class="tier pro">
+      <h3>Pro ⚡</h3>
+      <p style="margin-bottom:8px;">
+        <span style="font-size:1.6rem;font-weight:800;color:#58a6ff;">$99</span>
+        <span style="color:#8b949e;font-size:0.9rem;"> / cluster / year</span>
+      </p>
+      <p style="margin-bottom:20px;">
+        <span style="font-size:1rem;font-weight:600;color:#8b949e;">or $12</span>
+        <span style="color:#8b949e;font-size:0.9rem;"> / cluster / month</span>
+      </p>
+      <ul>
+        <li>Unlimited clusters</li>
+        <li>Unlimited namespaces</li>
+        <li>365-day data retention</li>
+        <li>Metrics, alerts, anomaly detection</li>
+        <li>Grafana dashboard</li>
+        <li>Webhook notifications</li>
+        <li>Priority support</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section style="padding: 60px 32px; text-align: center; background: #0d1117;" id="dashboard">
+  <h2 style="font-size: 2rem; font-weight: 800; margin-bottom: 16px;">📊 Grafana Dashboard</h2>
+  <p style="color:#8b949e; max-width: 700px; margin: 0 auto 32px; font-size: 1rem; line-height: 1.7;">
+    After installation, KubePocket automatically imports a pre-built Grafana dashboard.
+    Monitor namespaces, detect anomalies, track resource waste, analyze costs, and view
+    Kubernetes events — all from a single dashboard with <strong style="color:#e6edf3;">Cluster</strong>
+    and <strong style="color:#e6edf3;">Namespace</strong> dropdowns.
+  </p>
+
+  <!-- Gallery -->
+  <div style="max-width: 1100px; margin: 0 auto; position: relative;">
+    <!-- Slides -->
+    <div id="gallery" style="position: relative; border: 1px solid #30363d; border-radius: 12px; overflow: hidden; background: #161b22;">
+      <div class="slide" style="display:block;">
+        <img src="preview-1-overview.png" style="width:100%; display:block;" alt="Namespace Overview" />
+        <div style="padding:10px; color:#8b949e; font-size:0.85rem;">1 / 11 — Namespace Overview</div>
+      </div>
+      <div class="slide" style="display:none;">
+        <img src="preview-2-recomendations.png" style="width:100%; display:block;" alt="Recommendations" />
+        <div style="padding:10px; color:#8b949e; font-size:0.85rem;">2 / 11 — Recommendations</div>
+      </div>
+      <div class="slide" style="display:none;">
+        <img src="preview-3-cost.png" style="width:100%; display:block;" alt="Relative Cost" />
+        <div style="padding:10px; color:#8b949e; font-size:0.85rem;">3 / 11 — Relative Cost</div>
+      </div>
+      <div class="slide" style="display:none;">
+        <img src="preview-4-waste.png" style="width:100%; display:block;" alt="Resource Waste" />
+        <div style="padding:10px; color:#8b949e; font-size:0.85rem;">4 / 11 — Resource Waste Detection</div>
+      </div>
+      <div class="slide" style="display:none;">
+        <img src="preview-5-podanomaly.png" style="width:100%; display:block;" alt="Pod Anomaly" />
+        <div style="padding:10px; color:#8b949e; font-size:0.85rem;">5 / 11 — Pod Anomaly</div>
+      </div>
+      <div class="slide" style="display:none;">
+        <img src="preview-6-poddetails.png" style="width:100%; display:block;" alt="Pod Details" />
+        <div style="padding:10px; color:#8b949e; font-size:0.85rem;">6 / 11 — Pod Details</div>
+      </div>
+      <div class="slide" style="display:none;">
+        <img src="preview-7-events.png" style="width:100%; display:block;" alt="Kubernetes Events" />
+        <div style="padding:10px; color:#8b949e; font-size:0.85rem;">7 / 11 — Kubernetes Events</div>
+      </div>
+      <div class="slide" style="display:none;">
+        <img src="preview-8-events.png" style="width:100%; display:block;" alt="Real Usage vs Request" />
+        <div style="padding:10px; color:#8b949e; font-size:0.85rem;">8 / 11 — Real Usage vs Request</div>
+      </div>
+      <div class="slide" style="display:none;">
+        <img src="preview-9-nodes.png" style="width:100%; display:block;" alt="Node Metrics" />
+        <div style="padding:10px; color:#8b949e; font-size:0.85rem;">9 / 11 — Node Metrics</div>
+      </div>
+      <div class="slide" style="display:none;">
+        <img src="preview-11-storage.png" style="width:100%; display:block;" alt="Storage / PVC" />
+        <div style="padding:10px; color:#8b949e; font-size:0.85rem;">10 / 11 — Storage / PVC</div>
+      </div>
+      <div class="slide" style="display:none;">
+        <img src="preview-11-storagealerts.png" style="width:100%; display:block;" alt="Alert Messages" />
+        <div style="padding:10px; color:#8b949e; font-size:0.85rem;">11 / 11 — Alert Messages</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div style="display:flex; justify-content:center; align-items:center; gap:16px; margin-top:16px;">
+      <button onclick="changeSlide(-1)" style="background:#21262d; color:#e6edf3; border:1px solid #30363d; border-radius:6px; padding:8px 20px; cursor:pointer; font-size:1rem;">← Prev</button>
+      <span id="slide-counter" style="color:#8b949e; font-size:0.9rem;">1 / 11</span>
+      <button onclick="changeSlide(1)" style="background:#21262d; color:#e6edf3; border:1px solid #30363d; border-radius:6px; padding:8px 20px; cursor:pointer; font-size:1rem;">Next →</button>
+    </div>
+
+    <!-- Dot indicators -->
+    <div style="display:flex; justify-content:center; gap:6px; margin-top:12px;" id="dots">
+      <span class="dot active-dot" onclick="goToSlide(0)" style="width:8px;height:8px;border-radius:50%;background:#58a6ff;cursor:pointer;display:inline-block;"></span>
+      <span class="dot" onclick="goToSlide(1)" style="width:8px;height:8px;border-radius:50%;background:#30363d;cursor:pointer;display:inline-block;"></span>
+      <span class="dot" onclick="goToSlide(2)" style="width:8px;height:8px;border-radius:50%;background:#30363d;cursor:pointer;display:inline-block;"></span>
+      <span class="dot" onclick="goToSlide(3)" style="width:8px;height:8px;border-radius:50%;background:#30363d;cursor:pointer;display:inline-block;"></span>
+      <span class="dot" onclick="goToSlide(4)" style="width:8px;height:8px;border-radius:50%;background:#30363d;cursor:pointer;display:inline-block;"></span>
+      <span class="dot" onclick="goToSlide(5)" style="width:8px;height:8px;border-radius:50%;background:#30363d;cursor:pointer;display:inline-block;"></span>
+      <span class="dot" onclick="goToSlide(6)" style="width:8px;height:8px;border-radius:50%;background:#30363d;cursor:pointer;display:inline-block;"></span>
+      <span class="dot" onclick="goToSlide(7)" style="width:8px;height:8px;border-radius:50%;background:#30363d;cursor:pointer;display:inline-block;"></span>
+      <span class="dot" onclick="goToSlide(8)" style="width:8px;height:8px;border-radius:50%;background:#30363d;cursor:pointer;display:inline-block;"></span>
+      <span class="dot" onclick="goToSlide(9)" style="width:8px;height:8px;border-radius:50%;background:#30363d;cursor:pointer;display:inline-block;"></span>
+      <span class="dot" onclick="goToSlide(10)" style="width:8px;height:8px;border-radius:50%;background:#30363d;cursor:pointer;display:inline-block;"></span>
+    </div>
+  </div>
+
+  <script>
+    var current = 0;
+    var slides = document.querySelectorAll('.slide');
+    var dots = document.querySelectorAll('.dot');
+
+    function goToSlide(n) {
+      slides[current].style.display = 'none';
+      dots[current].style.background = '#30363d';
+      current = (n + slides.length) % slides.length;
+      slides[current].style.display = 'block';
+      dots[current].style.background = '#58a6ff';
+      document.getElementById('slide-counter').textContent = (current + 1) + ' / ' + slides.length;
+    }
+
+    function changeSlide(dir) {
+      goToSlide(current + dir);
+    }
+  </script>
+</section>
+
+<section class="contact" id="contact">
+  <h2>Get Pro License</h2>
+  <p>Send an e-mail with your company name and number of clusters. You will receive your signed license key within one business day.</p>
+  <span class="btn btn-primary" style="cursor:default;user-select:all;">yunus.olgun [at] outlook.com</span

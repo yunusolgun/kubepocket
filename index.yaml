@@ -1,0 +1,36 @@
+apiVersion: v1
+entries:
+  kubepocket:
+  - apiVersion: v2
+    appVersion: 3.0.0
+    created: "2026-03-21T19:34:56.132635+03:00"
+    dependencies:
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 15.x.x
+    description: Kubernetes cost and resource monitoring with AI-powered anomaly detection
+      and forecasting
+    digest: cc00ce86f267ee27f4a0894985a39059eceeb32d71dc410207d3b483c0534a26
+    home: https://yunusolgun.github.io/kubepocket
+    icon: https://raw.githubusercontent.com/yunusolgun/kubepocket/main/logo.png
+    keywords:
+    - kubernetes
+    - monitoring
+    - cost-optimization
+    - finops
+    - anomaly-detection
+    - forecasting
+    - ml
+    maintainers:
+    - email: yunus.olgun@outlook.com
+      name: KubePocket Team
+      url: https://yunusolgun.github.io/kubepocket
+    name: kubepocket
+    sources:
+    - https://github.com/yunusolgun/kubepocket
+    type: application
+    urls:
+    - https://yunusolgun.github.io/kubepocket/kubepocket-3.0.0.tgz
+    version: 3.0.0
+generated: "2026-03-21T19:34:56.125623+03:00"
